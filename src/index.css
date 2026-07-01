@@ -1,0 +1,54 @@
+@import url("https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,600;0,6..12,800;1,6..12,400&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply font-sans text-sapphire-800 bg-gradient-to-br from-sapphire-50 via-white to-platinum-50;
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .btn {
+    @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl shadow-luxe text-white bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-300;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center px-4 py-2 border border-glass text-sm font-medium rounded-xl text-primary-700 bg-glass backdrop-blur-md hover:bg-glass-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-300;
+  }
+
+  .input {
+    @apply block w-full rounded-xl border-platinum-200 bg-white/80 backdrop-blur-md shadow-luxe focus:border-primary-500 focus:ring-primary-500 sm:text-sm transition-all duration-300;
+  }
+
+  .card {
+    @apply bg-white/80 backdrop-blur-md rounded-2xl shadow-luxe border border-platinum-200/50 overflow-hidden transition-all duration-300 hover:shadow-glass-lg hover:scale-[1.02];
+  }
+
+  .glass-card {
+    @apply bg-white/90 backdrop-blur-md rounded-2xl shadow-luxe border border-platinum-200/50;
+  }
+
+  .glass-nav {
+    @apply bg-white/95 backdrop-blur-xl border-b border-platinum-200/50;
+  }
+
+  .glass-section {
+    @apply bg-gradient-to-br from-white/5 to-white/15 backdrop-blur-md rounded-3xl shadow-glass-lg border border-platinum-200/50;
+  }
+
+  .glass-hero {
+    @apply bg-gradient-to-br from-sapphire-900/40 via-sapphire-800/30 to-sapphire-900/20 backdrop-blur-xs;
+  }
+}
