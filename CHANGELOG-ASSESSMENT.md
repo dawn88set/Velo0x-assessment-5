@@ -167,4 +167,73 @@ method is never called on that path.
 > The helper wraps the click in an async `act`. (v14 made `click` async and this would be unnecessary;
 > bumping the dependency felt out of scope for the assessment.)
 
+---
+
+## Step 4 — Task 2: Homepage responsiveness
+
+### The root cause was not CSS
+
+Before touching a single breakpoint: **Tailwind was not installed and its config could not be parsed**
+(entries 5–6). Every `md:grid-cols-2`, `sm:px-6`, `hidden md:flex` in this codebase was an inert string.
+The page had no responsive behaviour at any width because it had no CSS at all. Fixing the toolchain
+is most of Task 2; the layout edits below are the remainder.
+
+A second, unrelated blocker surfaced while verifying the build:
+
+| # | File | Change | Why |
+|---|---|---|---|
+| 50 | `package.json` | Pinned `typescript@^4.9.5` in devDependencies | The repo shipped **no `package-lock.json`**, so a fresh `npm install` today resolves `typescript@7.0.2`. `@typescript-eslint@5` (pulled in by `eslint-config-react-app`) reads `ts.TypeFlags` at module load, which TS 7 no longer exposes that way → `eslint-plugin-jest` fails to load → `Environment key "jest/globals" is unknown` → **the build aborts before compiling anything**. npm even flags it `invalid: "^3.2.1 \|\| ^4"` and installs it anyway. |
+| 51 | `package-lock.json` | **Committed** | The durable fix for the above: without a lockfile every clone gets a different, drifting dependency tree. |
+
+### Layout changes — `src/pages/Home.jsx`
+
+| # | Element | Before → After | Why |
+|---|---|---|---|
+| 52 | Hero `<section>` | `h-[600px]` → `min-h-[520px] sm:min-h-[600px] py-16` | A hard 600px height cannot grow with its content. On a 375px screen the headline wraps to three lines and the copy was clipped by the fixed box. |
+| 53 | Hero card | `p-8 md:p-12` → `p-6 sm:p-8 md:p-12` | 2rem of padding on each side of a 375px viewport left very little room for the text |
+| 54 | Hero `<p>` | `text-xl` → `text-base sm:text-lg md:text-xl` | the only unscaled type in the hero |
+| 55 | Six section `<h2>`s | `text-3xl` → `text-2xl sm:text-3xl` | 30px headings on a phone crowd out the body copy |
+| 56 | Root wrapper | `space-y-16` → `space-y-12 sm:space-y-16` | 4rem between every section is a lot of dead scrolling on mobile |
+| 57 | Five card grids | `gap-8` → `gap-6 sm:gap-8` | narrows the gutters where width is scarcest |
+| 58 | Blog block | `py-24` → `py-12 sm:py-16 lg:py-24` | 6rem of vertical padding on a phone |
+| 59 | Property price/ROI row | added `gap-4`, `min-w-0` on both columns | `justify-between` with no gap let a long price and a long ROI string touch at ~360px |
+| 60 | Discord CTA | bespoke `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8` → the shared `.container` class | it was the only section not using the project's own container, so its gutters drifted from every other section |
+| 61 | Discord `<h2>` | `text-3xl … sm:text-4xl` → `text-2xl sm:text-3xl lg:text-4xl` | added the missing mobile step |
+| 62 | FAQ toggles | added `type="button"`, `aria-expanded`, `gap-4` | screen readers had no way to know a panel was open; `gap-4` stops long questions touching the chevron |
+| 63 | Property + blog `<img>` | added `loading="lazy"` | six below-the-fold 800px Unsplash images were all fetched eagerly |
+
+### `src/components/layout/Navbar.jsx`
+
+| # | Change | Why |
+|---|---|---|
+| 64 | Brand `text-2xl` → `text-xl sm:text-2xl`, added `truncate` + `min-w-0`, `flex-shrink-0` on the logo | logo + "GoldenProp" + hamburger crowd a 320px viewport |
+| 65 | Row: added `items-center gap-2` | the header row wasn't vertically centred |
+| 66 | Desktop links `md:space-x-8` → `md:space-x-4 lg:space-x-8`, `px-3` → `px-2 lg:px-3`, `whitespace-nowrap` | five links + brand + Connect button overflowed between 768px and ~900px — the one width where the desktop nav is active but cramped |
+| 67 | Hamburger: `aria-label`, `aria-expanded`, `aria-controls`, `p-2` tap target | it announced nothing and had a sub-44px hit area |
+| 68 | Mobile menu: `id="mobile-menu"`, Connect button now full-width | `w-auto` left it as a stray small button in the sheet |
+
+### Verified in Chrome
+
+Measured in same-origin iframes (which get their own viewport for media queries), at 375×667, 390×844,
+768×1024 and 1440×900:
+
+| Viewport | horizontal overflow | hamburger | first card grid |
+|---|---|---|---|
+| 375 × 667 | none (`scrollWidth` 360 ≤ 375) | shown | 1 column |
+| 390 × 844 | none (375 ≤ 390) | shown | 1 column |
+| 768 × 1024 | none (753 ≤ 768) | hidden | 2 columns |
+| 1440 × 900 | none (1425 ≤ 1440) | hidden | 4 columns |
+
+Zero elements wider than the viewport at any size. At 375px the mobile menu opens with all five links
+plus a 308px-wide, centred Connect Wallet button; the price/ROI columns no longer collide; six images
+carry `loading="lazy"`; five FAQ toggles expose `aria-expanded`.
+
+> **One correction worth recording:** the hero headline first appeared nearly invisible in screenshots,
+> and I briefly darkened `.glass-hero` from `40/30/20` to `75/65/60` to "fix contrast". That was wrong —
+> the tab was in a background window, so `requestAnimationFrame` was throttled and framer-motion's
+> entrance animations were frozen mid-fade (measured `opacity: 0.277`, and `0` on the paragraph).
+> Forcing the animations to their end state showed the **original scrim was perfectly legible**, so the
+> change was reverted. No contrast change ships. The `p-6 sm:p-8` padding fix was kept because it stands
+> on its own.
+
 *(entries below are appended as work proceeds)*

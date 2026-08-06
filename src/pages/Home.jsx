@@ -215,9 +215,9 @@ function Home() {
   };
 
   return (
-    <div className="space-y-16">
+    <div className="space-y-12 sm:space-y-16">
       {/* Hero Section */}
-      <section className="relative h-[600px] flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-[520px] sm:min-h-[600px] py-16 flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
           <img
             src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1600&q=80"
@@ -229,7 +229,7 @@ function Home() {
 
         <div className="relative container text-center text-white space-y-8">
           <motion.div
-            className="glass-section p-8 md:p-12 max-w-4xl mx-auto bg-sapphire-900/50 backdrop-blur-lg border border-white/20"
+            className="glass-section p-6 sm:p-8 md:p-12 max-w-4xl mx-auto bg-sapphire-900/50 backdrop-blur-lg border border-white/20"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
@@ -243,7 +243,7 @@ function Home() {
               Invest and Trade in Real Estate with Cryptocurrency
             </motion.h1>
             <motion.p
-              className="text-xl max-w-2xl mx-auto text-white/90 drop-shadow-md"
+              className="text-base sm:text-lg md:text-xl max-w-2xl mx-auto text-white/90 drop-shadow-md"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
@@ -256,11 +256,11 @@ function Home() {
       {/* Investment Steps */}
       <section className="container">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4 text-sapphire-800">Start Investing in Minutes</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-sapphire-800">Start Investing in Minutes</h2>
           <p className="text-platinum-600">Your journey to crypto-powered real estate investment</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
           {investmentSteps.map((step, index) => (
             <motion.div
               key={index}
@@ -288,11 +288,11 @@ function Home() {
         <div className="absolute inset-0 bg-gradient-to-br from-sapphire-900/50 to-transparent"></div>
         <div className="container relative">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">How GoldenProp Works</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-4">How GoldenProp Works</h2>
             <p className="text-sapphire-200">Understanding our tokenized real estate platform</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             {howItWorks.map((item, index) => (
               <motion.div
                 key={index}
@@ -316,11 +316,11 @@ function Home() {
       {/* Featured Properties */}
       <section className="container">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4 text-sapphire-800">Featured Investment Opportunities</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-sapphire-800">Featured Investment Opportunities</h2>
           <p className="text-platinum-600">Curated properties with verified returns and immediate tokenization</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {featuredProperties.map((property, index) => (
             <motion.div
               key={property.id}
@@ -334,6 +334,7 @@ function Home() {
                 <img
                   src={property.image}
                   alt={property.title}
+                  loading="lazy"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
                 <div className="absolute top-4 right-4 glass-card px-3 py-1 text-primary-600 font-semibold text-sm">
@@ -344,13 +345,13 @@ function Home() {
                 <h3 className="text-xl font-semibold mb-2 text-sapphire-800">{property.title}</h3>
                 <p className="text-platinum-600 mb-4">{property.location}</p>
 
-                <div className="flex justify-between items-center mb-4">
-                  <div>
+                <div className="flex justify-between items-center gap-4 mb-4">
+                  <div className="min-w-0">
                     <p className="text-sm text-platinum-500">Price</p>
                     <p className="font-semibold text-sapphire-800">${property.price.usd.toLocaleString()}</p>
                     <p className="text-sm text-primary-600">{property.price.eth} ETH</p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right min-w-0">
                     <p className="text-sm text-platinum-500">ROI</p>
                     <p className="font-semibold text-green-600">{property.roi}</p>
                   </div>
@@ -388,11 +389,11 @@ function Home() {
       <section className="bg-gradient-to-br from-sapphire-50 to-platinum-100 pt-16">
         <div className="container">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4 text-sapphire-800">Why Choose GoldenProp</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-sapphire-800">Why Choose GoldenProp</h2>
             <p className="text-platinum-600">Experience the future of real estate investment</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             {advantages.map((advantage, index) => (
               <motion.div
                 key={index}
@@ -416,7 +417,7 @@ function Home() {
         <div className="glass-section bg-gradient-to-br from-primary-600 to-primary-700 p-8 md:p-12 text-white text-center relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 to-transparent"></div>
           <div className="relative">
-            <h2 className="text-3xl font-bold mb-4">Ready to Start Investing?</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-4">Ready to Start Investing?</h2>
             <p className="text-lg mb-8 max-w-2xl mx-auto text-white/95 drop-shadow-sm">
               Join thousands of investors already earning passive income through tokenized real estate.
             </p>
@@ -434,20 +435,20 @@ function Home() {
       </section>
 
       {/* Blog */}
-      <div className="container bg-white py-24">
+      <div className="container bg-white py-12 sm:py-16 lg:py-24">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center max-w-3xl mx-auto mb-12"
         >
-          <h1 className="text-3xl font-bold mb-4">Latest Insights</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-4">Latest Insights</h1>
           <p className="text-secondary-600">
             Stay informed with our latest articles and market analysis
           </p>
         </motion.div>
 
         {/* Blog Posts Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {blogPosts.map((post, index) => (
             <motion.article
               key={post.id}
@@ -462,6 +463,7 @@ function Home() {
                   <img
                     src={post.image}
                     alt={post.title}
+                    loading="lazy"
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute top-4 right-4 bg-white px-3 py-1 rounded-full text-sm font-medium text-primary-600">
@@ -496,7 +498,7 @@ function Home() {
           className="max-w-3xl mx-auto"
         >
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Frequently Asked Questions</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-4">Frequently Asked Questions</h2>
             <p className="text-secondary-600">Find answers to common questions about our platform, cryptocurrency payments, and real estate investment.</p>
           </div>
           <div className="space-y-8">
@@ -506,8 +508,10 @@ function Home() {
                   {section.questions.map((item, questionIndex) => (
                     <div key={questionIndex} className="p-6">
                       <button
-                        className="w-full flex justify-between items-center text-left"
+                        type="button"
+                        className="w-full flex justify-between items-center gap-4 text-left"
                         onClick={() => toggleSection(section.title, questionIndex)}
+                        aria-expanded={Boolean(openSections[`${section.title}-${questionIndex}`])}
                       >
                         <span className="font-medium">{item.question}</span>
                         {openSections[`${section.title}-${questionIndex}`] ? (
@@ -542,10 +546,10 @@ function Home() {
 
       {/* Discord CTA */}
       <section className="py-12 bg-primary-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="container">
           <div className="lg:grid lg:grid-cols-2 lg:gap-8 items-center">
             <div>
-              <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white">
                 Join Our Community
               </h2>
               <p className="mt-4 text-lg text-primary-100">
