@@ -3,6 +3,7 @@ const path = require('path');
 const cors = require('cors');
 
 const { notFound, errorHandler } = require('./middleware/errorHandler');
+const status = require('./constants/httpStatus');
 
 // Routers
 const users = require('./routes/users');
@@ -29,7 +30,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(express.static(path.join(__dirname, 'uploads')));
 
-app.get('/', (req, res) => { res.status(200).send('Success'); });
+app.get('/', (req, res) => { res.status(status.OK).send('Success'); });
 
 // Routes
 app.use('/api/user', users);

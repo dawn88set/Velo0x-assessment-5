@@ -2,6 +2,12 @@ import { act } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 
 import { click } from '../test-utils/interactions';
+import {
+  PROVIDER_ERROR,
+  RPC_METHOD,
+  WALLET_ERROR_MESSAGE,
+  WALLET_EVENT,
+} from '../constants/ethereum';
 
 import { WalletProvider, formatAddress, useWallet } from './WalletContext';
 
@@ -25,11 +31,11 @@ function createProvider({ requestAccounts } = {}) {
     },
     request: jest.fn(({ method }) => {
       switch (method) {
-        case 'eth_accounts':
+        case RPC_METHOD.ACCOUNTS:
           return Promise.resolve([]);
-        case 'eth_requestAccounts':
+        case RPC_METHOD.REQUEST_ACCOUNTS:
           return requestAccounts ? requestAccounts() : Promise.resolve([ACCOUNT]);
-        case 'eth_chainId':
+        case RPC_METHOD.CHAIN_ID:
           return Promise.resolve('0x1');
         default:
           return Promise.reject(new Error(`Unhandled method ${method}`));
@@ -86,20 +92,20 @@ describe('WalletProvider', () => {
   });
 
   it('reports a friendly message when the user rejects the request (EIP-1193 4001)', async () => {
-    const rejection = Object.assign(new Error('User rejected the request.'), { code: 4001 });
+    const rejection = Object.assign(new Error('User rejected the request.'), { code: PROVIDER_ERROR.USER_REJECTED });
     window.ethereum = createProvider({ requestAccounts: () => Promise.reject(rejection) });
     renderWallet();
 
     await click(screen.getByRole('button', { name: 'Connect' }));
 
     await waitFor(() =>
-      expect(screen.getByTestId('error')).toHaveTextContent('Connection request rejected.'),
+      expect(screen.getByTestId('error')).toHaveTextContent(WALLET_ERROR_MESSAGE.REJECTED),
     );
     expect(screen.getByTestId('connected')).toHaveTextContent('false');
   });
 
   it('reports a pending request (EIP-1193 -32002)', async () => {
-    const pending = Object.assign(new Error('Already processing'), { code: -32002 });
+    const pending = Object.assign(new Error('Already processing'), { code: PROVIDER_ERROR.REQUEST_PENDING });
     window.ethereum = createProvider({ requestAccounts: () => Promise.reject(pending) });
     renderWallet();
 
@@ -117,7 +123,7 @@ describe('WalletProvider', () => {
     await click(screen.getByRole('button', { name: 'Connect' }));
 
     await waitFor(() =>
-      expect(screen.getByTestId('error')).toHaveTextContent('MetaMask is not installed.'),
+      expect(screen.getByTestId('error')).toHaveTextContent(WALLET_ERROR_MESSAGE.NOT_INSTALLED),
     );
   });
 
@@ -128,7 +134,7 @@ describe('WalletProvider', () => {
     await click(screen.getByRole('button', { name: 'Connect' }));
 
     await waitFor(() =>
-      expect(screen.getByTestId('error')).toHaveTextContent('MetaMask is not installed.'),
+      expect(screen.getByTestId('error')).toHaveTextContent(WALLET_ERROR_MESSAGE.NOT_INSTALLED),
     );
     expect(window.ethereum.request).not.toHaveBeenCalled();
   });
@@ -150,7 +156,7 @@ describe('WalletProvider', () => {
   it('restores an already-authorised account without prompting', async () => {
     const provider = createProvider();
     provider.request = jest.fn(({ method }) =>
-      method === 'eth_accounts'
+      method === RPC_METHOD.ACCOUNTS
         ? Promise.resolve([ACCOUNT])
         : Promise.resolve('0x1'),
     );
@@ -160,7 +166,7 @@ describe('WalletProvider', () => {
 
     await waitFor(() => expect(screen.getByTestId('account')).toHaveTextContent(ACCOUNT));
     // The silent path must never call the popup-triggering method.
-    expect(provider.request).not.toHaveBeenCalledWith({ method: 'eth_requestAccounts' });
+    expect(provider.request).not.toHaveBeenCalledWith({ method: RPC_METHOD.REQUEST_ACCOUNTS });
   });
 
   it('switches account when the wallet emits accountsChanged', async () => {
@@ -172,7 +178,7 @@ describe('WalletProvider', () => {
     await waitFor(() => expect(screen.getByTestId('account')).toHaveTextContent(ACCOUNT));
 
     const nextAccount = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd';
-    act(() => provider.emit('accountsChanged', [nextAccount]));
+    act(() => provider.emit(WALLET_EVENT.ACCOUNTS_CHANGED, [nextAccount]));
 
     await waitFor(() => expect(screen.getByTestId('account')).toHaveTextContent(nextAccount));
   });
@@ -185,7 +191,7 @@ describe('WalletProvider', () => {
     await click(screen.getByRole('button', { name: 'Connect' }));
     await waitFor(() => expect(screen.getByTestId('connected')).toHaveTextContent('true'));
 
-    act(() => provider.emit('accountsChanged', []));
+    act(() => provider.emit(WALLET_EVENT.ACCOUNTS_CHANGED, []));
 
     await waitFor(() => expect(screen.getByTestId('connected')).toHaveTextContent('false'));
     expect(screen.getByTestId('account')).toHaveTextContent('none');
@@ -205,7 +211,7 @@ describe('WalletProvider', () => {
     await waitFor(() => expect(screen.getByTestId('account')).toHaveTextContent(ACCOUNT));
 
     const nextAccount = '0xfeedfeedfeedfeedfeedfeedfeedfeedfeedfeed';
-    act(() => provider.emit('accountsChanged', [nextAccount]));
+    act(() => provider.emit(WALLET_EVENT.ACCOUNTS_CHANGED, [nextAccount]));
 
     await waitFor(() => expect(screen.getByTestId('account')).toHaveTextContent(nextAccount));
   });
@@ -215,11 +221,11 @@ describe('WalletProvider', () => {
     window.ethereum = provider;
     const { unmount } = renderWallet();
 
-    await waitFor(() => expect(provider.on).toHaveBeenCalledWith('accountsChanged', expect.any(Function)));
+    await waitFor(() => expect(provider.on).toHaveBeenCalledWith(WALLET_EVENT.ACCOUNTS_CHANGED, expect.any(Function)));
 
     unmount();
 
-    expect(provider.removeListener).toHaveBeenCalledWith('accountsChanged', expect.any(Function));
-    expect(provider.removeListener).toHaveBeenCalledWith('chainChanged', expect.any(Function));
+    expect(provider.removeListener).toHaveBeenCalledWith(WALLET_EVENT.ACCOUNTS_CHANGED, expect.any(Function));
+    expect(provider.removeListener).toHaveBeenCalledWith(WALLET_EVENT.CHAIN_CHANGED, expect.any(Function));
   });
 });

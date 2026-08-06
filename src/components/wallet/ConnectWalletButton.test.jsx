@@ -1,6 +1,12 @@
 import { render, screen, waitFor } from '@testing-library/react';
 
 import { click } from '../../test-utils/interactions';
+import {
+  METAMASK_DOWNLOAD_URL,
+  PROVIDER_ERROR,
+  RPC_METHOD,
+  WALLET_ERROR_MESSAGE,
+} from '../../constants/ethereum';
 
 import ConnectWalletButton from './ConnectWalletButton';
 import { WalletProvider } from '../../context/WalletContext';
@@ -13,9 +19,9 @@ function mockMetaMask({ requestAccounts } = {}) {
     on: jest.fn(),
     removeListener: jest.fn(),
     request: jest.fn(({ method }) => {
-      if (method === 'eth_accounts') return Promise.resolve([]);
-      if (method === 'eth_chainId') return Promise.resolve('0x1');
-      if (method === 'eth_requestAccounts') {
+      if (method === RPC_METHOD.ACCOUNTS) return Promise.resolve([]);
+      if (method === RPC_METHOD.CHAIN_ID) return Promise.resolve('0x1');
+      if (method === RPC_METHOD.REQUEST_ACCOUNTS) {
         return requestAccounts ? requestAccounts() : Promise.resolve([ACCOUNT]);
       }
       return Promise.reject(new Error(`Unhandled ${method}`));
@@ -60,9 +66,9 @@ describe('ConnectWalletButton', () => {
     await click(screen.getByRole('button', { name: /connect wallet/i }));
 
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('MetaMask is not installed.');
+    expect(alert).toHaveTextContent(WALLET_ERROR_MESSAGE.NOT_INSTALLED);
     expect(screen.getByRole('link', { name: /install metamask/i }))
-      .toHaveAttribute('href', 'https://metamask.io/download/');
+      .toHaveAttribute('href', METAMASK_DOWNLOAD_URL);
   });
 
   it('still offers the install link when the wallet disappears after mount', async () => {
@@ -75,7 +81,7 @@ describe('ConnectWalletButton', () => {
     delete window.ethereum;
     await click(screen.getByRole('button', { name: /connect wallet/i }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('MetaMask is not installed.');
+    expect(await screen.findByRole('alert')).toHaveTextContent(WALLET_ERROR_MESSAGE.NOT_INSTALLED);
     expect(screen.getByRole('link', { name: /install metamask/i })).toBeInTheDocument();
   });
 
@@ -91,13 +97,13 @@ describe('ConnectWalletButton', () => {
   });
 
   it('surfaces a rejection as an alert and stays disconnected', async () => {
-    const rejection = Object.assign(new Error('User rejected'), { code: 4001 });
+    const rejection = Object.assign(new Error('User rejected'), { code: PROVIDER_ERROR.USER_REJECTED });
     mockMetaMask({ requestAccounts: () => Promise.reject(rejection) });
     renderButton();
 
     await click(screen.getByRole('button', { name: /connect wallet/i }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Connection request rejected.');
+    expect(await screen.findByRole('alert')).toHaveTextContent(WALLET_ERROR_MESSAGE.REJECTED);
     expect(screen.getByRole('button', { name: /connect wallet/i })).toBeEnabled();
   });
 

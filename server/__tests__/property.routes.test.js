@@ -3,6 +3,7 @@ const request = require('supertest');
 const app = require('../app');
 const Property = require('../models/property');
 const PropertyType = require('../models/propertyTypes');
+const { PROPERTY } = require('../constants/messages');
 const {
     createState,
     createCity,
@@ -11,6 +12,7 @@ const {
     createProperty,
     buildPropertyPayload,
 } = require('./helpers/factories');
+const { PROPERTY_STATUS, PROPERTY_FOR, PROPERTY_CATEGORY } = require('../constants/domain');
 
 /** Body for POST /api/property/new, wired to real reference documents. */
 async function newPropertyBody(overrides = {}) {
@@ -37,7 +39,7 @@ describe('Property types', () => {
     it('POST /api/property/type creates a type', async () => {
         const res = await request(app)
             .post('/api/property/type')
-            .send({ title: 'Villa', type: 'residential' });
+            .send({ title: 'Villa', type: PROPERTY_CATEGORY.RESIDENTIAL });
 
         expect(res.status).toBe(201);
         expect(res.body.id).toBeDefined();
@@ -70,7 +72,7 @@ describe('POST /api/property/new', () => {
         const res = await request(app).post('/api/property/new').send(body);
 
         expect(res.status).toBe(201);
-        expect(res.body.message).toBe('Your property has been successfully posted');
+        expect(res.body.message).toBe(PROPERTY.CREATED);
         expect(res.body.result.slug).toBe('luxury-villa');
     });
 
@@ -120,7 +122,7 @@ describe('POST /api/property/new', () => {
 
         const res = await request(app).post('/api/property/new').send(body);
 
-        expect(res.body.result.status).toBe('available');
+        expect(res.body.result.status).toBe(PROPERTY_STATUS.AVAILABLE);
         expect(res.body.result.isActive).toBe(true);
     });
 });
@@ -181,29 +183,29 @@ describe('GET /api/property/single/:propertySlug', () => {
         const res = await request(app).get('/api/property/single/no-such-property');
 
         expect(res.status).toBe(404);
-        expect(res.body.message).toBe('Property not found');
+        expect(res.body.message).toBe(PROPERTY.NOT_FOUND);
     });
 });
 
 describe('POST /api/property/markAsSold/:propertySlug', () => {
     it('updates the status (regression: update()/nModified made this always fail)', async () => {
-        await createProperty({ slug: 'sold-me', status: 'available' });
+        await createProperty({ slug: 'sold-me', status: PROPERTY_STATUS.AVAILABLE });
 
         const res = await request(app)
             .post('/api/property/markAsSold/sold-me')
-            .send({ status: 'sold' });
+            .send({ status: PROPERTY_STATUS.SOLD });
 
         expect(res.status).toBe(200);
-        expect(res.body.message).toBe('Property has been updated Successfully');
+        expect(res.body.message).toBe(PROPERTY.UPDATED);
 
         const stored = await Property.findOne({ slug: 'sold-me' });
-        expect(stored.status).toBe('sold');
+        expect(stored.status).toBe(PROPERTY_STATUS.SOLD);
     });
 
     it('returns 404 when the slug matches nothing', async () => {
         const res = await request(app)
             .post('/api/property/markAsSold/not-a-property')
-            .send({ status: 'sold' });
+            .send({ status: PROPERTY_STATUS.SOLD });
 
         expect(res.status).toBe(404);
     });
@@ -217,14 +219,14 @@ describe('POST /api/property/markAsSold/:propertySlug', () => {
 
         expect(res.status).toBe(400);
         const stored = await Property.findOne({ slug: 'enum-check' });
-        expect(stored.status).toBe('available');
+        expect(stored.status).toBe(PROPERTY_STATUS.AVAILABLE);
     });
 });
 
 describe('GET /api/property/filter', () => {
     it('filters by propertyFor', async () => {
-        await createProperty({ title: 'For Sale', propertyFor: 'sell' });
-        await createProperty({ title: 'For Rent', propertyFor: 'rent' });
+        await createProperty({ title: 'For Sale', propertyFor: PROPERTY_FOR.SELL });
+        await createProperty({ title: 'For Rent', propertyFor: PROPERTY_FOR.RENT });
 
         const res = await request(app).get('/api/property/filter?propertyFor=rent');
 
@@ -233,8 +235,8 @@ describe('GET /api/property/filter', () => {
     });
 
     it('accepts a comma-separated list as an $in query', async () => {
-        await createProperty({ title: 'Sale', propertyFor: 'sell' });
-        await createProperty({ title: 'Rent', propertyFor: 'rent' });
+        await createProperty({ title: 'Sale', propertyFor: PROPERTY_FOR.SELL });
+        await createProperty({ title: 'Rent', propertyFor: PROPERTY_FOR.RENT });
 
         const res = await request(app).get('/api/property/filter?propertyFor=sell,rent');
 
@@ -252,8 +254,8 @@ describe('GET /api/property/filter', () => {
     });
 
     it('filters by status', async () => {
-        await createProperty({ title: 'Available', status: 'available' });
-        await createProperty({ title: 'Sold', status: 'sold' });
+        await createProperty({ title: 'Available', status: PROPERTY_STATUS.AVAILABLE });
+        await createProperty({ title: 'Sold', status: PROPERTY_STATUS.SOLD });
 
         const res = await request(app).get('/api/property/filter?status=sold');
 
@@ -285,6 +287,6 @@ describe('GET /api/property/showGFSImage/:filename', () => {
         const res = await request(app).get('/api/property/showGFSImage/missing.png');
 
         expect(res.status).toBe(404);
-        expect(res.body.message).toBe('No file exists');
+        expect(res.body.message).toBe(PROPERTY.FILE_NOT_FOUND);
     });
 });

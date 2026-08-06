@@ -1,5 +1,6 @@
 const request = require('supertest');
 const app = require('../app');
+const { AUTH, GENERIC } = require('../constants/messages');
 
 describe('app wiring', () => {
     it('GET / responds 200 with Success', async () => {
@@ -13,7 +14,7 @@ describe('app wiring', () => {
         const res = await request(app).get('/api/does-not-exist');
 
         expect(res.status).toBe(404);
-        expect(res.body).toEqual({ message: 'Route Not Found' });
+        expect(res.body).toEqual({ message: GENERIC.ROUTE_NOT_FOUND });
     });
 
     it('parses a JSON body (express.json was commented out in the original)', async () => {
@@ -24,7 +25,7 @@ describe('app wiring', () => {
             .send({ emailPhone: 'nobody@example.com', password: 'whatever' });
 
         expect(res.status).toBe(401);
-        expect(res.body.message).toBe('Invalid Credentials');
+        expect(res.body.message).toBe(AUTH.INVALID_CREDENTIALS);
     });
 
     it('parses a urlencoded body', async () => {

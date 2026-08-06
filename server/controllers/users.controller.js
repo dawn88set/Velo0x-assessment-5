@@ -1,13 +1,16 @@
 const mongoose = require('mongoose');
+
 const users = require('../models/users');
+const status = require('../constants/httpStatus');
+const { USER } = require('../constants/messages');
 
 module.exports = {
     getUserDetails: async (req, res, next) => {
         try {
-            // A malformed id used to throw an unhandled CastError; a missing user used
-            // to return 200 with an empty body. Both are answered properly now.
+            // A malformed id used to throw an unhandled CastError; a missing user
+            // used to return 200 with an empty body. Both are answered properly now.
             if (!mongoose.isValidObjectId(req.params.userId)) {
-                return res.status(400).json({ message: 'Invalid user id' });
+                return res.status(status.BAD_REQUEST).json({ message: USER.INVALID_ID });
             }
 
             const result = await users
@@ -17,12 +20,12 @@ module.exports = {
                 .populate('state', 'name');
 
             if (!result) {
-                return res.status(404).json({ message: 'User not found' });
+                return res.status(status.NOT_FOUND).json({ message: USER.NOT_FOUND });
             }
 
-            res.status(200).json(result);
+            return res.status(status.OK).json(result);
         } catch (err) {
-            next(err);
+            return next(err);
         }
     },
 };

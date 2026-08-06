@@ -6,6 +6,7 @@ const app = require('../app');
 const User = require('../models/users');
 const { secretKey } = require('../config/config');
 const { buildRegistrationPayload } = require('./helpers/factories');
+const { AUTH } = require('../constants/messages');
 
 const register = (overrides) =>
     request(app).post('/api/auth/user/register').send(buildRegistrationPayload(overrides));
@@ -17,7 +18,7 @@ describe('POST /api/auth/user/register', () => {
         const res = await register();
 
         expect(res.status).toBe(201);
-        expect(res.body.message).toBe('User Added Successfully');
+        expect(res.body.message).toBe(AUTH.REGISTERED);
         expect(res.body.id).toBeDefined();
 
         const stored = await User.findById(res.body.id);
@@ -53,7 +54,7 @@ describe('POST /api/auth/user/register', () => {
         const res = await register({ password: undefined });
 
         expect(res.status).toBe(400);
-        expect(res.body.message).toBe('Password is required');
+        expect(res.body.message).toBe(AUTH.MISSING_PASSWORD);
     });
 
     it('rejects a duplicate email with 409', async () => {
@@ -61,7 +62,7 @@ describe('POST /api/auth/user/register', () => {
         const res = await register({ phoneNo: '9111111111' });
 
         expect(res.status).toBe(409);
-        expect(res.body.message).toBe('User already exists');
+        expect(res.body.message).toBe(AUTH.ALREADY_EXISTS);
         expect(await User.countDocuments()).toBe(1);
     });
 });
@@ -77,7 +78,7 @@ describe('POST /api/auth/user/login', () => {
         const res = await login({ emailPhone: 'grace@example.com', password: PASSWORD });
 
         expect(res.status).toBe(200);
-        expect(res.body.message).toBe('Login Successful');
+        expect(res.body.message).toBe(AUTH.LOGIN_SUCCESS);
 
         const decoded = jwt.verify(res.body.token, secretKey);
         expect(decoded.user.email).toBe('grace@example.com');
@@ -127,7 +128,7 @@ describe('POST /api/auth/user/login', () => {
         const res = await request(app).post('/api/auth/user/login');
 
         expect(res.status).toBe(400);
-        expect(res.body.message).toBe('Provide all Credentials');
+        expect(res.body.message).toBe(AUTH.MISSING_CREDENTIALS);
     });
 });
 

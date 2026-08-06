@@ -2,6 +2,7 @@ const request = require('supertest');
 
 const app = require('../app');
 const { createUser, createCity, createState } = require('./helpers/factories');
+const { USER } = require('../constants/messages');
 
 describe('GET /api/user/:userId', () => {
     it('returns the user with city and state populated', async () => {
@@ -31,13 +32,13 @@ describe('GET /api/user/:userId', () => {
         const res = await request(app).get('/api/user/507f1f77bcf86cd799439011');
 
         expect(res.status).toBe(404);
-        expect(res.body.message).toBe('User not found');
+        expect(res.body.message).toBe(USER.NOT_FOUND);
     });
 
     it('returns 400 for a malformed id rather than throwing a CastError', async () => {
         const res = await request(app).get('/api/user/not-a-valid-id');
 
         expect(res.status).toBe(400);
-        expect(res.body.message).toBe('Invalid user id');
+        expect(res.body.message).toBe(USER.INVALID_ID);
     });
 });

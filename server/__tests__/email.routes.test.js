@@ -2,6 +2,7 @@ const request = require('supertest');
 const sgMail = require('@sendgrid/mail'); // mocked globally in setup.js
 
 const app = require('../app');
+const { EMAIL } = require('../constants/messages');
 
 const VALID_BODY = {
     toEmail: 'owner@example.com',
@@ -28,7 +29,7 @@ describe('POST /api/email/github-pages', () => {
         const res = await post(VALID_BODY);
 
         expect(res.status).toBe(200);
-        expect(res.body.message).toBe('Email sent successfully');
+        expect(res.body.message).toBe(EMAIL.SENT);
         expect(sgMail.setApiKey).toHaveBeenCalledWith('SG.test-key');
         expect(sgMail.send).toHaveBeenCalledTimes(1);
     });
@@ -72,7 +73,7 @@ describe('POST /api/email/github-pages', () => {
         const res = await post(VALID_BODY);
 
         expect(res.status).toBe(400);
-        expect(res.body.message).toBe('Sendgrid API key not found');
+        expect(res.body.message).toBe(EMAIL.MISSING_API_KEY);
         expect(sgMail.send).not.toHaveBeenCalled();
     });
 
@@ -82,7 +83,7 @@ describe('POST /api/email/github-pages', () => {
         const res = await post(VALID_BODY);
 
         expect(res.status).toBe(400);
-        expect(res.body.message).toBe('Sendgrid template not found');
+        expect(res.body.message).toBe(EMAIL.MISSING_TEMPLATE);
     });
 
     it('surfaces a SendGrid failure as a message, not the raw error object', async () => {

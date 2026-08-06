@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const BUCKET_NAME = 'imageMeta';
+const { IMAGE_BUCKET } = require('../constants/domain');
 
 let bucket = null;
 
@@ -20,7 +20,7 @@ function getBucket() {
     // 1 === connected
     if (conn.readyState !== 1 || !conn.db) return null;
 
-    bucket = new mongoose.mongo.GridFSBucket(conn.db, { bucketName: BUCKET_NAME });
+    bucket = new mongoose.mongo.GridFSBucket(conn.db, { bucketName: IMAGE_BUCKET });
     return bucket;
 }
 
@@ -29,4 +29,4 @@ function getBucket() {
 // connection up and down).
 mongoose.connection.on('disconnected', () => { bucket = null; });
 
-module.exports = { getBucket, BUCKET_NAME };
+module.exports = { getBucket };

@@ -1,5 +1,18 @@
 # DeFi Real Estate - Take-Home Assessment
 
+> **My submission write-up is in [SUMMARY.md](./SUMMARY.md)** — what I changed, the assumptions I made,
+> and one thing I found in this repo that you should read before running it.
+>
+> ```bash
+> nvm use 20 && npm install
+> npm test    # backend + frontend
+> npm start   # client on :3000, API on :5001
+> ```
+>
+> The original brief follows unchanged.
+
+---
+
 Thank you for your interest in joining our team.
 
 This short assessment is designed to evaluate your React, Node.js, testing, and problem-solving skills.

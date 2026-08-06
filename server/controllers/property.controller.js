@@ -2,6 +2,9 @@ const helpers = require('../providers/helper');
 const { getBucket } = require('../providers/gridfs');
 const propertyType = require('../models/propertyTypes');
 const Property = require('../models/property');
+const status = require('../constants/httpStatus');
+const { PROPERTY } = require('../constants/messages');
+const { PROPERTY_IMAGE_PATH } = require('../constants/domain');
 
 // Mongoose 7 removed callback support from queries, so every handler here is
 // promise-based. Validation/cast failures are surfaced as 400s.
@@ -16,7 +19,7 @@ module.exports = {
     propertyTypeList: async (req, res, next) => {
         try {
             const result = await propertyType.find({ is_active: true });
-            res.status(200).json(result);
+            res.status(status.OK).json(result);
         } catch (err) {
             next(err);
         }
@@ -31,8 +34,8 @@ module.exports = {
             });
 
             const result = await proptyp.save();
-            res.status(201).json({
-                message: 'Property type added successfully',
+            res.status(status.CREATED).json({
+                message: PROPERTY.TYPE_CREATED,
                 id: result._id,
             });
         } catch (err) {
@@ -52,7 +55,7 @@ module.exports = {
             payload.type = payload.Proptype;
             payload.cornrPlot = Boolean(payload.cornrPlot);
             payload.images = imgs;
-            payload.imgPath = 'properties';
+            payload.imgPath = PROPERTY_IMAGE_PATH;
 
             if (!payload.isSociety) {
                 payload.flatNo = '';
@@ -61,9 +64,9 @@ module.exports = {
 
             const result = await new Property(payload).save();
 
-            res.status(201).json({
+            res.status(status.CREATED).json({
                 result,
-                message: 'Your property has been successfully posted',
+                message: PROPERTY.CREATED,
             });
         } catch (err) {
             next(err);
@@ -75,7 +78,7 @@ module.exports = {
             const result = await Property
                 .find({ isActive: true, userId: req.params.userId })
                 .populate(POPULATE_REFS);
-            res.status(200).json(result);
+            res.status(status.OK).json(result);
         } catch (err) {
             next(err);
         }
@@ -87,7 +90,7 @@ module.exports = {
                 .find({ isActive: true })
                 .populate(POPULATE_REFS)
                 .populate('userId', 'fname lname');
-            res.status(200).json(result);
+            res.status(status.OK).json(result);
         } catch (err) {
             next(err);
         }
@@ -101,7 +104,7 @@ module.exports = {
 
             // A missing property is a 404, not the blanket 400 the original returned.
             if (!result) {
-                return res.status(404).json({ message: 'Property not found' });
+                return res.status(status.NOT_FOUND).json({ message: PROPERTY.NOT_FOUND });
             }
 
             let files = [];
@@ -110,7 +113,7 @@ module.exports = {
                 files = await bucket.find({ filename: { $in: result.images } }).toArray();
             }
 
-            res.status(200).json({ result, files });
+            res.status(status.OK).json({ result, files });
         } catch (err) {
             next(err);
         }
@@ -128,12 +131,12 @@ module.exports = {
             );
 
             if (result.matchedCount === 0) {
-                return res.status(404).json({ message: 'Property not found' });
+                return res.status(status.NOT_FOUND).json({ message: PROPERTY.NOT_FOUND });
             }
 
-            res.status(200).json({
+            res.status(status.OK).json({
                 result,
-                message: 'Property has been updated Successfully',
+                message: PROPERTY.UPDATED,
             });
         } catch (err) {
             next(err);
@@ -157,7 +160,7 @@ module.exports = {
                 .populate(POPULATE_REFS)
                 .populate('userId', 'fname lname');
 
-            res.status(200).json(result);
+            res.status(status.OK).json(result);
         } catch (err) {
             next(err);
         }
@@ -167,17 +170,17 @@ module.exports = {
         try {
             const bucket = getBucket();
             if (!bucket) {
-                return res.status(503).json({ message: 'File storage unavailable' });
+                return res.status(status.SERVICE_UNAVAILABLE).json({ message: PROPERTY.STORAGE_UNAVAILABLE });
             }
 
             const [file] = await bucket.find({ filename: req.params.filename }).toArray();
 
             if (!file) {
-                return res.status(404).json({ message: 'No file exists' });
+                return res.status(status.NOT_FOUND).json({ message: PROPERTY.FILE_NOT_FOUND });
             }
 
             if (file.contentType !== 'image/jpeg' && file.contentType !== 'image/png') {
-                return res.status(415).json({ message: 'Not an image' });
+                return res.status(status.UNSUPPORTED_MEDIA_TYPE).json({ message: PROPERTY.NOT_AN_IMAGE });
             }
 
             res.set('Content-Type', file.contentType);

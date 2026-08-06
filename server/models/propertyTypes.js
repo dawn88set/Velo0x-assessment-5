@@ -1,6 +1,8 @@
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
+const { PROPERTY_CATEGORY } = require('../constants/domain');
+
 const propertyTypesSchema = new Schema({
     title: {
         type: String
@@ -8,7 +10,7 @@ const propertyTypesSchema = new Schema({
     type: {
         type: String,
         required: true,
-        enum: ['residential', 'commercial', 'agricultural']
+        enum: Object.values(PROPERTY_CATEGORY)
     },
     is_active: {
         type: Boolean,

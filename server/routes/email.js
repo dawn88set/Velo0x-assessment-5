@@ -2,6 +2,8 @@ const express = require('express');
 const sgMail = require('@sendgrid/mail');
 
 const helpers = require('../providers/helper');
+const status = require('../constants/httpStatus');
+const { EMAIL } = require('../constants/messages');
 
 const router = express.Router();
 
@@ -11,12 +13,12 @@ router.post('/github-pages', async (req, res, next) => {
   const missingKey = helpers.isKeyMissing(req.body, REQUIRED_KEYS);
 
   let errorMessage = '';
-  if (missingKey) errorMessage = `${missingKey} is missing`;
-  else if (!process.env.SENDGRID_API_KEY) errorMessage = 'Sendgrid API key not found';
-  else if (!process.env.SENDGRID_TEMPLATE_ID) errorMessage = 'Sendgrid template not found';
+  if (missingKey) errorMessage = EMAIL.missingKey(missingKey);
+  else if (!process.env.SENDGRID_API_KEY) errorMessage = EMAIL.MISSING_API_KEY;
+  else if (!process.env.SENDGRID_TEMPLATE_ID) errorMessage = EMAIL.MISSING_TEMPLATE;
 
   if (errorMessage) {
-    return res.status(400).json({ message: errorMessage });
+    return res.status(status.BAD_REQUEST).json({ message: errorMessage });
   }
 
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -34,10 +36,10 @@ router.post('/github-pages', async (req, res, next) => {
 
   try {
     await sgMail.send(msg);
-    res.status(200).json({ message: 'Email sent successfully' });
+    res.status(status.OK).json({ message: EMAIL.SENT });
   } catch (err) {
     // The original sent the raw SendGrid error object straight to the client.
-    res.status(400).json({ message: err.message || 'Failed to send email' });
+    res.status(status.BAD_REQUEST).json({ message: err.message || EMAIL.SEND_FAILED });
   }
 });
 

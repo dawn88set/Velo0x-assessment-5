@@ -3,6 +3,7 @@ const City = require('../../models/city');
 const PropertyType = require('../../models/propertyTypes');
 const Property = require('../../models/property');
 const User = require('../../models/users');
+const { PROPERTY_FOR, PROPERTY_CATEGORY } = require('../../constants/domain');
 
 /**
  * Builders for the reference documents most route tests need. Each accepts an
@@ -25,7 +26,7 @@ const createCity = async (overrides = {}) => {
 };
 
 const createPropertyType = (overrides = {}) =>
-    PropertyType.create({ title: 'Apartment', type: 'residential', ...overrides });
+    PropertyType.create({ title: 'Apartment', type: PROPERTY_CATEGORY.RESIDENTIAL, ...overrides });
 
 const createUser = (overrides = {}) => {
     const n = next();
@@ -42,7 +43,7 @@ const createUser = (overrides = {}) => {
 /** A complete, schema-valid property body. Every `required` field is populated. */
 const buildPropertyPayload = (overrides = {}) => ({
     title: 'Luxury Villa',
-    propertyFor: 'sell',
+    propertyFor: PROPERTY_FOR.SELL,
     locality: 'Indiranagar',
     length: 40,
     breadth: 60,

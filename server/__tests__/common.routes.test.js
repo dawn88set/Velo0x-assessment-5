@@ -3,6 +3,7 @@ const request = require('supertest');
 const app = require('../app');
 const City = require('../models/city');
 const { createState, createCity, createUser } = require('./helpers/factories');
+const { COMMON, GENERIC } = require('../constants/messages');
 
 describe('States', () => {
     it('GET /api/common/state returns an empty array when there are none', async () => {
@@ -39,7 +40,7 @@ describe('States', () => {
         // The original had no `else` on the error branch, so this path used to
         // send a response twice and throw ERR_HTTP_HEADERS_SENT.
         expect(res.status).toBe(409);
-        expect(res.body.message).toBe('name already exists');
+        expect(res.body.message).toBe(GENERIC.duplicateField('name'));
     });
 });
 
@@ -52,7 +53,7 @@ describe('Cities', () => {
             .send({ name: 'Kochi', state_id: state._id.toString() });
 
         expect(created.status).toBe(201);
-        expect(created.body.message).toBe('City added successfully');
+        expect(created.body.message).toBe(COMMON.CITY_CREATED);
         expect(await City.countDocuments()).toBe(1);
     });
 
@@ -100,7 +101,7 @@ describe('Cities', () => {
         const res = await request(app).delete(`/api/common/city/${city._id}`);
 
         expect(res.status).toBe(200);
-        expect(res.body.message).toBe('City removed successfully');
+        expect(res.body.message).toBe(COMMON.CITY_REMOVED);
         expect(await City.countDocuments()).toBe(0);
     });
 
@@ -109,7 +110,7 @@ describe('Cities', () => {
         const res = await request(app).delete('/api/common/city/507f1f77bcf86cd799439011');
 
         expect(res.status).toBe(404);
-        expect(res.body.message).toBe('City not found');
+        expect(res.body.message).toBe(COMMON.CITY_NOT_FOUND);
     });
 
     it('DELETE returns 400 for a malformed id', async () => {

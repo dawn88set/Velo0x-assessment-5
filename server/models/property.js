@@ -1,6 +1,8 @@
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
+const { PROPERTY_STATUS, PROPERTY_FOR } = require('../constants/domain');
+
 const propertySchema = mongoose.model('property', new mongoose.Schema({
     title: {
         type: String,
@@ -10,8 +12,8 @@ const propertySchema = mongoose.model('property', new mongoose.Schema({
     propertyFor: {
         type: String,
         required: true,
-        default: 'sell',
-        enum: ['sell', 'rent']
+        default: PROPERTY_FOR.SELL,
+        enum: Object.values(PROPERTY_FOR)
     },
     description: {
         type: String
@@ -84,8 +86,8 @@ const propertySchema = mongoose.model('property', new mongoose.Schema({
     },
     status: {
         type: String,
-        default: 'available',
-        enum: [ 'available', 'sold', 'rented', 'expired' ]
+        default: PROPERTY_STATUS.AVAILABLE,
+        enum: Object.values(PROPERTY_STATUS)
     },
     isActive: {
         type: Boolean,

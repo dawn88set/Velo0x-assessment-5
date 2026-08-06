@@ -1,8 +1,18 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
+import {
+  METAMASK_DOWNLOAD_URL,
+  PROVIDER_ERROR,
+  RPC_METHOD,
+  WALLET_ERROR_MESSAGE,
+  WALLET_EVENT,
+} from '../constants/ethereum';
+
 const WalletContext = createContext(null);
 
-export const METAMASK_DOWNLOAD_URL = 'https://metamask.io/download/';
+// Re-exported so consumers of the wallet can reach it without also importing the
+// constants module.
+export { METAMASK_DOWNLOAD_URL };
 
 /**
  * Resolve the MetaMask provider specifically.
@@ -32,12 +42,12 @@ export function formatAddress(address) {
 /** Map an EIP-1193 error onto something a user can act on. */
 function toFriendlyError(err) {
   switch (err?.code) {
-    case 4001:
-      return 'Connection request rejected.';
-    case -32002:
-      return 'A connection request is already pending — open the MetaMask extension.';
+    case PROVIDER_ERROR.USER_REJECTED:
+      return WALLET_ERROR_MESSAGE.REJECTED;
+    case PROVIDER_ERROR.REQUEST_PENDING:
+      return WALLET_ERROR_MESSAGE.PENDING;
     default:
-      return err?.message || 'Could not connect to MetaMask.';
+      return err?.message || WALLET_ERROR_MESSAGE.FALLBACK;
   }
 }
 
@@ -81,7 +91,7 @@ export function WalletProvider({ children }) {
       // mount and the UI withholds the "Install MetaMask" link while telling the
       // user MetaMask is missing.
       setProvider(null);
-      setError('MetaMask is not installed.');
+      setError(WALLET_ERROR_MESSAGE.NOT_INSTALLED);
       return;
     }
 
@@ -90,8 +100,8 @@ export function WalletProvider({ children }) {
     setError(null);
 
     try {
-      const accounts = await active.request({ method: 'eth_requestAccounts' });
-      const currentChain = await active.request({ method: 'eth_chainId' });
+      const accounts = await active.request({ method: RPC_METHOD.REQUEST_ACCOUNTS });
+      const currentChain = await active.request({ method: RPC_METHOD.CHAIN_ID });
 
       if (!mounted.current) return;
 
@@ -114,10 +124,10 @@ export function WalletProvider({ children }) {
 
     (async () => {
       try {
-        const accounts = await provider.request({ method: 'eth_accounts' });
+        const accounts = await provider.request({ method: RPC_METHOD.ACCOUNTS });
         if (cancelled || !accounts?.length) return;
 
-        const currentChain = await provider.request({ method: 'eth_chainId' });
+        const currentChain = await provider.request({ method: RPC_METHOD.CHAIN_ID });
         if (cancelled) return;
 
         setAccount(accounts[0]);
@@ -147,12 +157,12 @@ export function WalletProvider({ children }) {
 
     const handleChainChanged = (nextChainId) => setChainId(nextChainId);
 
-    provider.on('accountsChanged', handleAccountsChanged);
-    provider.on('chainChanged', handleChainChanged);
+    provider.on(WALLET_EVENT.ACCOUNTS_CHANGED, handleAccountsChanged);
+    provider.on(WALLET_EVENT.CHAIN_CHANGED, handleChainChanged);
 
     return () => {
-      provider.removeListener?.('accountsChanged', handleAccountsChanged);
-      provider.removeListener?.('chainChanged', handleChainChanged);
+      provider.removeListener?.(WALLET_EVENT.ACCOUNTS_CHANGED, handleAccountsChanged);
+      provider.removeListener?.(WALLET_EVENT.CHAIN_CHANGED, handleChainChanged);
     };
   }, [provider]);
 
