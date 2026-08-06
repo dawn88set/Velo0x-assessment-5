@@ -1,181 +1,191 @@
-const mongoose = require('mongoose');
-const moment = require('moment');
-const fs = require('fs');
-var Grid  = require('gridfs-stream');
-
 const helpers = require('../providers/helper');
-var propertyType = require('../models/propertyTypes');
-var Property = require('../models/property');
+const { getBucket } = require('../providers/gridfs');
+const propertyType = require('../models/propertyTypes');
+const Property = require('../models/property');
 
-var gfs;
-var conn = mongoose.connection;
-conn.on('connected', () => { 
-    gfs = Grid(conn.db, mongoose.mongo);
-    gfs.collection('imageMeta');
- });
+// Mongoose 7 removed callback support from queries, so every handler here is
+// promise-based. Validation/cast failures are surfaced as 400s.
+
+const POPULATE_REFS = [
+    { path: 'city', select: 'name' },
+    { path: 'state', select: 'name' },
+    { path: 'type', select: 'title' },
+];
 
 module.exports = {
-    propertyTypeList: (req, res) => {
-        propertyType.find({ is_active: true }, (err, result) => {
-            if (err)
-                res.status(400).send(err);
-            else
-                res.status(200).json(result);
-        });
-    },
-    addPropertyType: (req, res) => {
-        var proptyp = new propertyType();
-
-        proptyp.title = req.body.title;
-        proptyp.type = req.body.type;
-        proptyp.createdOn = Date.now();
-
-        proptyp.save((err, result) => {
-            if (err)
-                res.status(400).send(err);
-            else
-                res.status(200).json({ message: 'Property type added successfully', id: result._id });
-        });
-    },
-    addNewProperty: async (req, res) => {
-        let imgs = [];      
-        try{
-            if(req.files && req.files.length)
-                req.files.forEach(ele => imgs.push(ele.filename) )
-            //Creating slug for the listing 
-            var slug  = await helpers.slugGenerator(req.body.title, 'title', 'property');
-            req.body.slug = slug;
-            req.body.type = req.body.Proptype;
-            req.body.cornrPlot = req.body.cornrPlot ? true : false;
-            req.body.images = imgs;      
-            req.body.imgPath = 'properties';
-            if(!req.body.isSociety){
-                req.body.flatNo = '';
-                req.body.societyName = '';
-            }            
-            const prop = new Property(req.body);
-            const result = await prop.save();
-
-            if(result && result._id && result.slug)
-                res.status(200).json({result, message: "Your property has been successfully posted"});                
-            else throw new Error('Something Went Wrong');
-        }
-        catch(err){
-            console.log({err});
-            res.status(400).json({message: err.message});
+    propertyTypeList: async (req, res, next) => {
+        try {
+            const result = await propertyType.find({ is_active: true });
+            res.status(200).json(result);
+        } catch (err) {
+            next(err);
         }
     },
-    getUserList: (req, res) => {
-        Property.find({ isActive: true, userId: req.params.userId })
-            .populate('city', 'name')
-            .populate('state', 'name')
-            .populate('type', 'title')
-            .exec((err, result) => {
-                if (err)
-                    res.status(400).send(err);
-                else
-                    res.status(200).json(result);
+
+    addPropertyType: async (req, res, next) => {
+        try {
+            const proptyp = new propertyType({
+                title: req.body.title,
+                type: req.body.type,
+                createdOn: Date.now(),
             });
+
+            const result = await proptyp.save();
+            res.status(201).json({
+                message: 'Property type added successfully',
+                id: result._id,
+            });
+        } catch (err) {
+            next(err);
+        }
     },
-    getSingleProperty: async (req, res) => {
-        try{
-            var result  = await Property.findOne({ slug: req.params.propertySlug })
-                .populate('city', 'name')
-                .populate('state', 'name')
-                .populate('type', 'title');
-                
-            var files = [];
-            if(result && result.images.length){
-                files = await gfs.files.find({ filename: { $in : result.images } }).toArray();
+
+    addNewProperty: async (req, res, next) => {
+        try {
+            const imgs = (req.files || [])
+                .map((file) => file.filename)
+                .filter(Boolean);
+
+            const payload = { ...req.body };
+
+            payload.slug = await helpers.slugGenerator(payload.title, 'title', 'property');
+            payload.type = payload.Proptype;
+            payload.cornrPlot = Boolean(payload.cornrPlot);
+            payload.images = imgs;
+            payload.imgPath = 'properties';
+
+            if (!payload.isSociety) {
+                payload.flatNo = '';
+                payload.societyName = '';
             }
-            if(result) res.status(200).json({result, files});
-            else throw new Error('Something Went Wrong');
-        }
-        catch(err){
-            res.status(400).json({message: err.message});
-        }
-        
-    },
-    getFullList: (req, res) => {
-        Property.find({ isActive: true })
-            .populate('city', 'name')
-            .populate('state', 'name')
-            .populate('type', 'title')
-            .populate('userId', 'name')
-            .exec((err, result) => {
-                if (err)
-                    res.status(400).send(err);
-                else
-                    res.status(200).json(result);
-            });
-    },
-    markAsSold: async (req, res) => {
-        try{
-            const result = await Property.update({ slug: req.params.propertySlug }, { status: req.body.status });
-            console.log({result});
-            if(result && result.nModified == 1) res.status(200).json({ result, message: "Property has been updated Successfully" });
-            else throw new Error('Error in updating property');
-        }
-        catch(err){
-            res.status(400).json({message: err.message});
-        }
-    },
-    filterProperties: (req, res) => {
-        // console.log('propertyFor ', req.query.propertyFor, typeof req.query.propertyFor);
-        // console.log(req.query.propertyFor.split(","));        
-        var query = {};
-        // query['isActive'] = true;
 
-        if (req.query.propertyFor)
-            query['propertyFor'] = { $in: req.query.propertyFor.split(",") }
-        if (req.query.type)
-            query['type'] = { $in: req.query.type.split(",") }
-        if (req.query.city)
-            query['city'] = { $in: req.query.city.split(",") }
-        if (req.query.userId)
-            query['userId'] = req.query.userId
-        if (req.query.notUserId)
-            query['userId'] = { $ne: req.query.notUserId }
-        if (req.query.status)
-            query['status'] = { $in: req.query.status.split(",") }
-        console.log({ query });
-        Property.find(query)
-            .populate('city', 'name')
-            .populate('state', 'name')
-            .populate('type', 'title')
-            .populate('userId', 'name')
-            .exec((err, result) => {
-                if (err)
-                    res.status(400).send(err);
-                else
-                    res.status(200).json(result);
+            const result = await new Property(payload).save();
+
+            res.status(201).json({
+                result,
+                message: 'Your property has been successfully posted',
             });
+        } catch (err) {
+            next(err);
+        }
     },
-    testController: async (req, res) => {
-        // console.log({testData});
-        const testData = await Property.find({ updatedOn: { $gte : '2019-04-01' } })
-        console.log({ testData });
-        return res.send(testData);
+
+    getUserList: async (req, res, next) => {
+        try {
+            const result = await Property
+                .find({ isActive: true, userId: req.params.userId })
+                .populate(POPULATE_REFS);
+            res.status(200).json(result);
+        } catch (err) {
+            next(err);
+        }
     },
-    showGFSImage: (req, res) => {
-        gfs.files.findOne({ filename: req.params.filename }, (err, file) => {
-          // Check if file
-          if (!file || file.length === 0) {
-            return res.status(404).json({
-              err: 'No file exists'
+
+    getFullList: async (req, res, next) => {
+        try {
+            const result = await Property
+                .find({ isActive: true })
+                .populate(POPULATE_REFS)
+                .populate('userId', 'fname lname');
+            res.status(200).json(result);
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    getSingleProperty: async (req, res, next) => {
+        try {
+            const result = await Property
+                .findOne({ slug: req.params.propertySlug })
+                .populate(POPULATE_REFS);
+
+            // A missing property is a 404, not the blanket 400 the original returned.
+            if (!result) {
+                return res.status(404).json({ message: 'Property not found' });
+            }
+
+            let files = [];
+            const bucket = getBucket();
+            if (bucket && result.images && result.images.length) {
+                files = await bucket.find({ filename: { $in: result.images } }).toArray();
+            }
+
+            res.status(200).json({ result, files });
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    markAsSold: async (req, res, next) => {
+        try {
+            // Was `Property.update(...)` + `result.nModified`. `update()` was removed in
+            // Mongoose 7 and `nModified` was renamed `modifiedCount` in Mongoose 6, so
+            // this endpoint could never succeed.
+            const result = await Property.updateOne(
+                { slug: req.params.propertySlug },
+                { status: req.body.status, updatedOn: Date.now() },
+                { runValidators: true },
+            );
+
+            if (result.matchedCount === 0) {
+                return res.status(404).json({ message: 'Property not found' });
+            }
+
+            res.status(200).json({
+                result,
+                message: 'Property has been updated Successfully',
             });
-          }
-      
-          // Check if image
-          if (file.contentType === 'image/jpeg' || file.contentType === 'image/png') {
-            // Read output to browser
-            const readstream = gfs.createReadStream(file.filename);
-            readstream.pipe(res);
-          } else {
-            res.status(404).json({
-              err: 'Not an image'
-            });
-          }
-        }) 
-    }
-}
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    filterProperties: async (req, res, next) => {
+        try {
+            const query = {};
+            const csv = (value) => value.split(',').map((v) => v.trim()).filter(Boolean);
+
+            if (req.query.propertyFor) query.propertyFor = { $in: csv(req.query.propertyFor) };
+            if (req.query.type) query.type = { $in: csv(req.query.type) };
+            if (req.query.city) query.city = { $in: csv(req.query.city) };
+            if (req.query.userId) query.userId = req.query.userId;
+            if (req.query.notUserId) query.userId = { $ne: req.query.notUserId };
+            if (req.query.status) query.status = { $in: csv(req.query.status) };
+
+            const result = await Property
+                .find(query)
+                .populate(POPULATE_REFS)
+                .populate('userId', 'fname lname');
+
+            res.status(200).json(result);
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    showGFSImage: async (req, res, next) => {
+        try {
+            const bucket = getBucket();
+            if (!bucket) {
+                return res.status(503).json({ message: 'File storage unavailable' });
+            }
+
+            const [file] = await bucket.find({ filename: req.params.filename }).toArray();
+
+            if (!file) {
+                return res.status(404).json({ message: 'No file exists' });
+            }
+
+            if (file.contentType !== 'image/jpeg' && file.contentType !== 'image/png') {
+                return res.status(415).json({ message: 'Not an image' });
+            }
+
+            res.set('Content-Type', file.contentType);
+            bucket.openDownloadStreamByName(file.filename)
+                .on('error', next)
+                .pipe(res);
+        } catch (err) {
+            next(err);
+        }
+    },
+};

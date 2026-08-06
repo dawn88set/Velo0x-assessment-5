@@ -1,80 +1,97 @@
 const mongoose = require('mongoose');
-var state_model = require('../models/state');
-var city_model = require('../models/city');
-var users = require('../models/users');
+const state_model = require('../models/state');
+const city_model = require('../models/city');
+const users = require('../models/users');
+
+// The original handlers used the Mongoose callback API (removed in Mongoose 7) and,
+// on the error path, called res.status(400).send(err) *without* an `else` — so the
+// success response was sent too, throwing ERR_HTTP_HEADERS_SENT. Both are fixed by
+// moving to async/await with a single response per path.
 
 module.exports = {
     // STATES
-    getStateList: (req, res) => {
-        // console.log('GET statelist');
-
-        state_model.find({ is_active: true })
-        .exec((err, data) => {
-            if(err)
-                res.status(400).send(err);
-            res.status(200).send(data);
-        });
-    },
-    addState: (req, res) => {
-        var state = new state_model();
-        state.name = req.body.name;
-
-        state.save((err) => {
-            if(err)
-                res.send(err);
-            res.json({ message: 'State added successfully' });
-        })
-    },
-    //CITIES
-    getAllCities: (req, res) => {
-        city_model.find({ is_active: true })
-            .populate('state_id', 'name')
-            .exec((err, data) => {
-            if(err)
-                res.status(400).send(err);
+    getStateList: async (req, res, next) => {
+        try {
+            const data = await state_model.find({ is_active: true });
             res.status(200).json(data);
-        });
-    },
-    getCityList: (req, res) => {
-        city_model.find({ state_id: req.params.state_id, is_active: true })
-            .populate('state_id', 'name')
-            .exec((err, data) => {
-            if(err)
-                res.status(400).send(err);
-            res.status(200).json(data);
-        });
-    },
-    addCity: async (req, res) => {
-        try{
-            var city = new city_model(req.body);
-            const result = await city.save();
-            console.log({result});
-            if(result) res.status(200).json({ message: 'City added successfully' });
-            else throw new Error('Something Went Wrong');
-        }
-        catch(err){
-            res.status(400).json({message: err.message});
+        } catch (err) {
+            next(err);
         }
     },
-    removeCity: (req, res) => {
-        city_model.remove({_id: req.params.cityId }, (err, result) => {
-            if(err)
-                res.status(400).send(err);
+
+    addState: async (req, res, next) => {
+        try {
+            const state = new state_model({ name: req.body.name });
+            await state.save();
+            res.status(201).json({ message: 'State added successfully' });
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    // CITIES
+    getAllCities: async (req, res, next) => {
+        try {
+            const data = await city_model
+                .find({ is_active: true })
+                .populate('state_id', 'name');
+            res.status(200).json(data);
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    getCityList: async (req, res, next) => {
+        try {
+            if (!mongoose.isValidObjectId(req.params.state_id)) {
+                return res.status(400).json({ message: 'Invalid state id' });
+            }
+
+            const data = await city_model
+                .find({ state_id: req.params.state_id, is_active: true })
+                .populate('state_id', 'name');
+            res.status(200).json(data);
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    addCity: async (req, res, next) => {
+        try {
+            const city = new city_model(req.body);
+            await city.save();
+            res.status(201).json({ message: 'City added successfully' });
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    removeCity: async (req, res, next) => {
+        try {
+            if (!mongoose.isValidObjectId(req.params.cityId)) {
+                return res.status(400).json({ message: 'Invalid city id' });
+            }
+
+            // `Model.remove()` was removed in Mongoose 7.
+            const result = await city_model.deleteOne({ _id: req.params.cityId });
+
+            if (result.deletedCount === 0) {
+                return res.status(404).json({ message: 'City not found' });
+            }
+
             res.status(200).json({ message: 'City removed successfully', data: result });
-        })
+        } catch (err) {
+            next(err);
+        }
     },
-    //checkemailAvailability
-    checkemailAvailability: (req, res) => {
-        // res.send(req.params.email);
-        var email = req.params.email;
 
-        users.find({email: email}, (err, result) => {
-            if(err)
-                res.status(400).send(err);
-            else if(result.length > 0)
-                res.status(200).json({  response: true});
-            else
-                res.status(200).json({  response: false});
-        });
-    }
-}
+    // checkemailAvailability
+    checkemailAvailability: async (req, res, next) => {
+        try {
+            const existing = await users.exists({ email: req.params.email });
+            res.status(200).json({ response: Boolean(existing) });
+        } catch (err) {
+            next(err);
+        }
+    },
+};

@@ -1,7 +1,7 @@
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
-userSchema = new Schema({
+const userSchema = new Schema({
     fname: {
         type: String,
         required: true
@@ -45,7 +45,7 @@ userSchema = new Schema({
     },
     updatedOn: {
         type: Date,
-        default: Date.now()
+        default: Date.now
     },
     createdOn: {
         type: Date

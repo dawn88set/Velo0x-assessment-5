@@ -1,7 +1,7 @@
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
-propertyTypesSchema = new Schema({
+const propertyTypesSchema = new Schema({
     title: {
         type: String
     },
@@ -16,7 +16,7 @@ propertyTypesSchema = new Schema({
     },
     updatedOn: {
         type: Date,
-        default: Date.now()
+        default: Date.now
     },
     createdOn: {
         type: Date

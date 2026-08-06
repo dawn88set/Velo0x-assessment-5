@@ -1,28 +1,40 @@
-
 module.exports = {
+    /**
+     * Builds a URL-safe slug from a title, appending -1, -2, ... until it is unique
+     * within `tableName`.
+     */
     slugGenerator: async (title, fieldName, tableName) => {
-        title = (title) ? title : 'Property listing';
-        var slug = title.trim().toLowerCase().split(' ').join('-').replace(/[,"$!^@%*&]+/g, "");
-        let table = require(`../models/${tableName}`);
-        let incrementer = 0;
-        if (table) {
-            do {
-                var result = await table.findOne({ slug: incrementer ? slug + '-' + incrementer : slug }).select('slug');
+        const source = title || 'Property listing';
+        const slug = source
+            .trim()
+            .toLowerCase()
+            .split(' ')
+            .join('-')
+            .replace(/[,"$!^@%*&]+/g, '');
 
-                if (result && result.slug)
-                    incrementer++;
-                else
-                    return incrementer ? slug + '-' + incrementer : slug;
-            } while (true)
+        const table = require(`../models/${tableName}`);
+        if (!table) return String(Date.now());
+
+        let incrementer = 0;
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+            const candidate = incrementer ? `${slug}-${incrementer}` : slug;
+            const existing = await table.findOne({ slug: candidate }).select('slug');
+
+            if (existing && existing.slug) incrementer++;
+            else return candidate;
         }
-        else return Date.now();
     },
-    isKeyMissing: (data, requiredArray) => {
-        for (element of requiredArray) {
-            if (!data[element]) {
-                return element
-            }
+
+    /**
+     * Returns the first key in `requiredArray` missing from `data`, or false if all
+     * are present.
+     */
+    isKeyMissing: (data = {}, requiredArray = []) => {
+        // `for (element of ...)` in the original declared an implicit global.
+        for (const element of requiredArray) {
+            if (!data[element]) return element;
         }
-        return false
-    }
-}
+        return false;
+    },
+};

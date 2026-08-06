@@ -1,25 +1,24 @@
 const express = require('express');
-var app = express();
 
-var commonController = require('../controllers/common.controller');
+const commonController = require('../controllers/common.controller');
 
-var router = express.Router();
+const router = express.Router();
 
 // States
 router.route('/state')
-.get(commonController.getStateList)
-.post(commonController.addState)
+    .get(commonController.getStateList)
+    .post(commonController.addState);
 
-//Cities
+// Cities
 router.route('/cities')
-.get(commonController.getAllCities)
-.post(commonController.addCity)
+    .get(commonController.getAllCities)
+    .post(commonController.addCity);
 
-router.get('/cities/:state_id', commonController.getCityList)
+router.get('/cities/:state_id', commonController.getCityList);
 
-router.delete('/city/:cityId', commonController.removeCity)
+router.delete('/city/:cityId', commonController.removeCity);
 
-//checkemail-availability
-router.get('/checkemail-availability/email/:email', commonController.checkemailAvailability)
+// checkemail-availability
+router.get('/checkemail-availability/email/:email', commonController.checkemailAvailability);
 
 module.exports = router;

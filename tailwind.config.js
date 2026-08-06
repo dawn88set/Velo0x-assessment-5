@@ -1,6 +1,8 @@
-export default {
+/** @type {import('tailwindcss').Config} */
+// Must stay CommonJS: Create React App loads this file with `require()`.
+module.exports = {
   content: [
-    "./index.html",
+    "./public/index.html",
     "./src/**/*.{js,jsx}"
   ],
   theme: {

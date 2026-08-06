@@ -1,103 +1,122 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
 const userM = require("../models/users");
 const { secretKey } = require("../config/config");
 
+const SALT_ROUNDS = 10;
+
 module.exports = {
-  userLogin: (req, res) => {
-    var loginType;
-    if (req.body.emailPhone != "" && req.body.password != "") {
-      if (isNaN(req.body.emailPhone)) loginType = "email";
-      else loginType = "phoneNo";
-      userM
-        .findOne()
-        .where(loginType, req.body.emailPhone)
-        .exec((err, data) => {
-          if (err) res.status(400).send(err);
-          else if (data) {
-            bcrypt.compare(req.body.password, data.password, function (
-              err,
-              passMatch
-            ) {
-              if (err) res.status(400).send(err);
-              else if (passMatch) {
-                let jwtData = {
-                  _id: data["_id"],
-                  fname: data["fname"],
-                  lname: data["lname"],
-                  email: data["email"],
-                  isAdmin: data["isAdmin"]
-                };
-                var token = jwt.sign({ user: jwtData }, secretKey);
-                res
-                  .status(200)
-                  .json({ message: "Login Successful", token: token });
-              } else res.status(401).json({ message: "Invalid Credentials1" });
-            });
-          } else res.status(401).json({ message: "Invalid Credentials2" });
-        });
-    } else res.status(400).json({ message: "Provide all Credentials" });
-  },
-  userRegistration: (req, res) => {
-    users = new userM();
-    users.fname = req.body.fname;
-    users.lname = req.body.lName;
-    users.email = req.body.email;
-    users.phoneNo = req.body.phoneNo;
-    users.state = req.body.state;
-    users.city = req.body.city;
-    users.pincode = req.body.pincode;
-    users.userType = req.body.user_type;
-    users.createdOn = new Date();
+  userLogin: async (req, res, next) => {
+    try {
+      const { emailPhone, password } = req.body || {};
 
-    bcrypt.hash(req.body.password, 10, function (err, hash) {
-      if (err) res.status(400).send(err);
-      else {
-        users.password = hash;
+      // The original read req.body.emailPhone directly, which throws when no body
+      // was sent (and the body parser was disabled, so that was every request).
+      if (!emailPhone || !password) {
+        return res.status(400).json({ message: "Provide all Credentials" });
+      }
 
-        users.save((err, data) => {
-          if (err) res.status(400).send(err);
-          else
-            res
-              .status(200)
-              .json({ message: "User Added Successfully", id: data._id });
-        });
+      const loginType = isNaN(emailPhone) ? "email" : "phoneNo";
+      const user = await userM.findOne({ [loginType]: emailPhone });
+
+      // Deliberately identical response for "no such user" and "wrong password".
+      // The original returned "Invalid Credentials1" vs "Invalid Credentials2",
+      // which let an attacker enumerate registered accounts.
+      const passMatch = user
+        ? await bcrypt.compare(password, user.password)
+        : false;
+
+      if (!user || !passMatch) {
+        return res.status(401).json({ message: "Invalid Credentials" });
       }
-    });
+
+      const jwtData = {
+        _id: user._id,
+        fname: user.fname,
+        lname: user.lname,
+        email: user.email,
+        isAdmin: user.isAdmin,
+      };
+
+      const token = jwt.sign({ user: jwtData }, secretKey, { expiresIn: "1d" });
+
+      res.status(200).json({ message: "Login Successful", token });
+    } catch (err) {
+      next(err);
+    }
   },
-  userList: (req, res) => {
-    userM.find().exec((err, data) => {
-      if (err)
-        res.status(400).json({ message: "Something Went Wrong", data: err });
-      else res.status(200).json({ message: "Success", data });
-    });
-  },
-  changePass: (req, res) => {
-    userM.findOne({ _id: req.body._id }).exec((err, resp) => {
-      if (err)
-        res.status(400).json({ message: "Something Went Wrong", data: err });
-      else {
-        bcrypt.hash(req.body.password, 10, (err, hash) => {
-          if (err) res.status(400).send(err);
-          else {
-            userM
-              .updateOne({ _id: req.body._id }, { password: hash })
-              .exec((err, resp) => {
-                if (err)
-                  res
-                    .status(400)
-                    .json({ message: "Something Went Wrong", data: err });
-                else
-                  res
-                    .status(200)
-                    .json({
-                      message: "Password Changed Successfully",
-                      id: resp
-                    });
-              });
-          }
-        });
+
+  userRegistration: async (req, res, next) => {
+    try {
+      const { password } = req.body || {};
+
+      if (!password) {
+        return res.status(400).json({ message: "Password is required" });
       }
-    });
-  }
+
+      const hash = await bcrypt.hash(password, SALT_ROUNDS);
+
+      // `users = new userM()` in the original was missing `var` — an implicit
+      // global shared across concurrent requests.
+      const user = new userM({
+        fname: req.body.fname,
+        // Was `req.body.lName`. `lname` is required by the schema, so with that
+        // casing typo every registration failed validation.
+        lname: req.body.lname,
+        email: req.body.email,
+        phoneNo: req.body.phoneNo,
+        state: req.body.state,
+        city: req.body.city,
+        pincode: req.body.pincode,
+        userType: req.body.user_type,
+        password: hash,
+        createdOn: new Date(),
+      });
+
+      const data = await user.save();
+
+      res.status(201).json({ message: "User Added Successfully", id: data._id });
+    } catch (err) {
+      // Duplicate email / phone number.
+      if (err.code === 11000) {
+        return res.status(409).json({ message: "User already exists" });
+      }
+      next(err);
+    }
+  },
+
+  userList: async (req, res, next) => {
+    try {
+      const data = await userM.find().select("-password");
+      res.status(200).json({ message: "Success", data });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  changePass: async (req, res, next) => {
+    try {
+      const { _id, password } = req.body || {};
+
+      if (!_id || !password) {
+        return res.status(400).json({ message: "Provide user id and password" });
+      }
+
+      if (!mongoose.isValidObjectId(_id)) {
+        return res.status(400).json({ message: "Invalid user id" });
+      }
+
+      const hash = await bcrypt.hash(password, SALT_ROUNDS);
+      const result = await userM.updateOne({ _id }, { password: hash });
+
+      if (result.matchedCount === 0) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.status(200).json({ message: "Password Changed Successfully", id: _id });
+    } catch (err) {
+      next(err);
+    }
+  },
 };

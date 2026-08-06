@@ -103,11 +103,11 @@ const propertySchema = mongoose.model('property', new mongoose.Schema({
     },
     updatedOn: {
         type: Date,
-        default: Date.now()
+        default: Date.now
     },
     createdOn: {
         type: Date,
-        default: Date.now()
+        default: Date.now
     }
 }) );
 
