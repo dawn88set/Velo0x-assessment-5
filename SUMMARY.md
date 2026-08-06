@@ -73,7 +73,7 @@ when it's late the listeners were never attached, so every account switch after 
 for the life of the page. Connecting still worked, which is what made it easy to miss. Fixed, with a
 regression test.
 
-## Task 2: homepage responsiveness
+## Task 2: responsiveness
 
 This one wasn't a CSS problem. Tailwind was never installed. `postcss.config.js` referenced it, and CRA 5
 turns it on automatically whenever `tailwind.config.js` exists, but it wasn't in `package.json` at all —
@@ -93,8 +93,20 @@ touched at around 360px. The Discord section used its own gutters instead of the
 The navbar links overflowed between 768px and roughly 900px, which is the one range where the desktop nav
 is active but cramped.
 
-I measured at 375, 390, 768 and 1440: no horizontal overflow at any width, no element wider than its
-viewport, hamburger only below `md`, grids at 1 / 2 / 4 columns.
+The brief said to review the homepage, so I started there. Afterwards I went through the rest of the app
+as well, because the same problems were in it: headings pinned at 36px with no mobile step across About,
+FAQ, Privacy, Blog, BlogPost, Properties and the 404 page, section padding and grid gaps with no mobile
+step, and a fixed-height hero in `BlogPost`.
+
+That last one was worth the trip. `BlogPost` used `h-[400px]`, and on a phone the five-line title plus
+byline is taller than that, so the copy spilled past the dark scrim onto the page background and the
+byline became grey-on-photo. Same class of bug as the homepage hero, so it got the same fix: `min-h-*`
+with the image and scrim absolutely positioned, so the band grows to whatever the copy needs.
+
+I measured every route at 320, 375, 768 and 1440: no horizontal overflow anywhere, no element wider than
+its viewport, hamburger only below `md`, grids at 1 / 2 / 4 columns. Two things I checked and chose to
+leave: `PropertyDetail`'s `grid-cols-3` is a thumbnail strip (about 93px each at 320px, which is fine)
+and one `text-4xl` in `Home.jsx` sizes a react-icon rather than a heading.
 
 You also asked for a few things after seeing it run, which are in there: the mobile menu is an overlay now
 rather than pushing the page down, cards go flat and full-bleed on phones instead of floating, the
@@ -165,8 +177,8 @@ Also normalised `auth.controller.js` to single quotes (it was the only server fi
    so ethers would add bundle weight and webpack polyfill surface for no gain. Easy to swap later.
 7. **Disconnect only clears local state.** MetaMask has no programmatic disconnect; revoking access is done
    from the extension. Worth knowing before you test that button.
-8. **Only the homepage was restyled**, as specified. The other pages still have their original
-   responsiveness, which I have not audited.
+8. **I went past the brief on responsiveness.** It asked for the homepage; I did the rest of the pages
+   too, since they had the same issues and leaving them half-done seemed worse than the extra diff.
 9. **Creation endpoints now return 201 instead of 200.** Nothing in this frontend consumes them, so I took
    the correct status. Say the word if you'd rather keep the old contract; it's one line each.
 

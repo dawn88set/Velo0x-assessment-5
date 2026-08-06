@@ -297,7 +297,7 @@ function Home() {
       </section>
 
       {/* How It Works */}
-      <section className="bg-gradient-to-br from-sapphire-900 via-sapphire-800 to-sapphire-900 text-white py-16 relative overflow-hidden">
+      <section className="bg-gradient-to-br from-sapphire-900 via-sapphire-800 to-sapphire-900 text-white py-12 sm:py-16 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-sapphire-900/50 to-transparent"></div>
         <div className="container relative">
           <div className="text-center mb-12">

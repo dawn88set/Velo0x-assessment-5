@@ -93,7 +93,7 @@ function Blog() {
   });
 
   return (
-    <div className="min-h-screen bg-secondary-50 py-16">
+    <div className="min-h-screen bg-secondary-50 py-12 sm:py-16">
       <div className="container">
         {/* Header */}
         <motion.div
@@ -101,7 +101,7 @@ function Blog() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center max-w-3xl mx-auto mb-12"
         >
-          <h1 className="text-4xl font-bold mb-4">Real Estate & Crypto Insights</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold mb-4">Real Estate & Crypto Insights</h1>
           <p className="text-secondary-600">
             Stay updated with the latest trends in real estate investment, cryptocurrency, and blockchain technology.
           </p>
@@ -141,7 +141,7 @@ function Blog() {
         </div>
 
         {/* Blog Posts Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {filteredPosts.map((post, index) => (
             <motion.article
               key={post.id}

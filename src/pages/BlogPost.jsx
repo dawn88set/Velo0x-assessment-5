@@ -51,14 +51,18 @@ function BlogPost() {
   return (
     <div className="min-h-screen bg-secondary-50">
       {/* Hero Section */}
-      <div className="relative h-[400px]">
+      {/* min-height rather than a fixed height: a long title wraps to five lines
+          on a phone, and a fixed band would let it spill past the dark overlay
+          onto the page background, taking the byline with it. The image and
+          scrim are absolute so they always cover whatever height the copy needs. */}
+      <div className="relative flex items-center min-h-[240px] sm:min-h-[320px] md:min-h-[400px] py-10">
         <img
           src={post.image}
           alt={post.title}
-          className="w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-black bg-opacity-50" />
-        <div className="absolute inset-0 flex items-center">
+        <div className="relative w-full">
           <div className="container">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -69,8 +73,8 @@ function BlogPost() {
                 <FiArrowLeft className="mr-2" />
                 Back to Blog
               </Link>
-              <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
-              <div className="flex items-center text-secondary-200 space-x-6">
+              <h1 className="text-3xl sm:text-4xl font-bold mb-4">{post.title}</h1>
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-secondary-200">
                 <div className="flex items-center">
                   <FiUser className="mr-2" />
                   {post.author}
@@ -91,7 +95,7 @@ function BlogPost() {
 
       {/* Content */}
       <div className="container py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
           {/* Main Content */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}

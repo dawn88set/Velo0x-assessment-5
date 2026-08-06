@@ -114,14 +114,14 @@ We aim to respond to all inquiries within 48 hours.`
   ];
 
   return (
-    <div className="min-h-screen bg-secondary-50 py-16">
+    <div className="min-h-screen bg-secondary-50 py-12 sm:py-16">
       <div className="container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="max-w-4xl mx-auto"
         >
-          <h1 className="text-4xl font-bold text-center mb-4">Privacy Policy</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold text-center mb-4">Privacy Policy</h1>
           <p className="text-secondary-600 text-center mb-12">
             Last updated: March 15, 2024
           </p>

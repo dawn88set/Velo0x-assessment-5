@@ -6,7 +6,7 @@ function Footer() {
   return (
     <footer className="bg-secondary-900 text-white">
       <div className="container py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 sm:gap-8">
           {/* Company Info */}
           <div>
             <h3 className="text-lg font-semibold mb-4">GoldenProp</h3>

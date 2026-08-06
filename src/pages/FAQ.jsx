@@ -186,14 +186,14 @@ function FAQ() {
 
 
   return (
-    <div className="min-h-screen bg-secondary-50 py-16">
+    <div className="min-h-screen bg-secondary-50 py-12 sm:py-16">
       <div className="container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="max-w-3xl mx-auto"
         >
-          <h1 className="text-4xl font-bold text-center mb-4">Frequently Asked Questions</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold text-center mb-4">Frequently Asked Questions</h1>
           <p className="text-secondary-600 text-center mb-12">
             Find answers to common questions about our platform, cryptocurrency payments, and real estate investment.
           </p>

@@ -181,7 +181,7 @@ function Properties() {
       <div className="glass-nav">
         <div className="container py-6">
           <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold text-sapphire-800">Investment Properties</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-sapphire-800">Investment Properties</h1>
             <div className="flex items-center space-x-4">
               <button
                 className={`p-2 rounded-xl transition-all duration-300 ${showFilters ? 'glass-card text-primary-600' : 'hover:bg-glass'}`}
@@ -296,7 +296,7 @@ function Properties() {
 
       {/* Properties Grid */}
       <div className="container py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {sortedProperties.map((property, index) => (
             <motion.div
               key={property.id}

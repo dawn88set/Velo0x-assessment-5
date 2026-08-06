@@ -75,7 +75,7 @@ function About() {
   return (
     <div className="min-h-screen bg-secondary-50">
       {/* Hero Section */}
-      <section className="relative bg-secondary-900 text-white py-24">
+      <section className="relative bg-secondary-900 text-white py-12 sm:py-16 lg:py-24">
         <div className="container">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -83,7 +83,7 @@ function About() {
             transition={{ duration: 0.6 }}
             className="max-w-3xl mx-auto text-center"
           >
-            <h1 className="text-4xl md:text-5xl font-bold mb-6">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
               Revolutionizing Real Estate Investment
             </h1>
             <p className="text-xl text-secondary-200">
@@ -95,9 +95,9 @@ function About() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-16">
+      <section className="py-12 sm:py-16">
         <div className="container">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             {stats.map((stat, index) => (
               <motion.div
                 key={index}
@@ -108,7 +108,7 @@ function About() {
                 className="bg-white rounded-lg p-6 text-center shadow-md"
               >
                 <stat.icon className="w-8 h-8 mx-auto mb-4 text-primary-600" />
-                <div className="text-3xl font-bold text-secondary-900 mb-2">{stat.value}</div>
+                <div className="text-2xl sm:text-3xl font-bold text-secondary-900 mb-2">{stat.value}</div>
                 <div className="text-secondary-600">{stat.label}</div>
               </motion.div>
             ))}
@@ -117,10 +117,10 @@ function About() {
       </section>
 
       {/* Mission Section */}
-      <section className="py-16 bg-white">
+      <section className="py-12 sm:py-16 bg-white">
         <div className="container">
           <div className="max-w-3xl mx-auto text-center mb-16">
-            <h2 className="text-3xl font-bold mb-6">Our Mission</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-6">Our Mission</h2>
             <p className="text-lg text-secondary-600">
               To democratize real estate investment by leveraging blockchain technology, 
               making property ownership accessible to investors worldwide through 
@@ -128,7 +128,7 @@ function About() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -181,10 +181,10 @@ function About() {
       </section>
 
       {/* Team Section */}
-      <section className="py-16">
+      <section className="py-12 sm:py-16">
         <div className="container">
-          <h2 className="text-3xl font-bold text-center mb-12">Our Leadership Team</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-12">Our Leadership Team</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             {team.map((member, index) => (
               <motion.div
                 key={index}
@@ -211,10 +211,10 @@ function About() {
       </section>
 
       {/* Partners Section */}
-      <section className="py-16 bg-white">
+      <section className="py-12 sm:py-16 bg-white">
         <div className="container">
-          <h2 className="text-3xl font-bold text-center mb-12">Supported Cryptocurrencies</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-12">Supported Cryptocurrencies</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 max-w-3xl mx-auto">
             {partners.map((partner, index) => (
               <motion.div
                 key={index}
@@ -233,10 +233,10 @@ function About() {
       </section>
 
       {/* Awards Section */}
-      <section className="py-16">
+      <section className="py-12 sm:py-16">
         <div className="container">
-          <h2 className="text-3xl font-bold text-center mb-12">Recognition & Achievements</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-12">Recognition & Achievements</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 max-w-3xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}

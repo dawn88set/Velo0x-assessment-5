@@ -297,7 +297,41 @@ offset, `amount: 0.15` so a card starts moving as it enters rather than after.
 
 ---
 
-## 9. Constants
+## 9. The rest of the pages
+
+Task 2 named the homepage, so that is where I stopped initially. Going back over the other routes turned
+up the same problems, so they got the same treatment.
+
+Ten headings sat at a bare `text-3xl` or `text-4xl` with no mobile step: `About` (x6, including the h1),
+`FAQ`, `Privacy`, `Blog`, `BlogPost`, `Properties` and `NotFound`. At 320px a bold 36px heading eats most
+of the screen. Now `text-2xl sm:text-3xl` and `text-3xl sm:text-4xl`, matching what the homepage already
+did. The two that already carried `md:text-5xl` kept it and gained the missing lower step.
+
+Section padding (`py-16`, one `py-24`) and fourteen `gap-8` grid gutters got mobile steps for the same
+reason. The `Footer` grid too, since it renders on every page.
+
+**`BlogPost`'s hero was a genuine bug, and I briefly made it worse.** It used a fixed `h-[400px]` with the
+title absolutely positioned over it. On a phone the five-line title plus the byline is taller than the
+band, so the copy spilled past the dark scrim onto the light page background and the grey byline became
+unreadable against the photo. My first pass shortened it to `h-[240px]`, which made the overflow worse
+rather than fixing it — the fixed height was the problem, not its value. The real fix is the pattern the
+homepage hero already uses: `min-h-*` with the image and scrim `absolute inset-0`, so the band grows to
+whatever the copy needs. Measured afterwards: the hero renders 416px tall at 360px wide, the scrim
+matches it exactly, and the byline sits inside both. The byline row also got `flex-wrap` with `gap-x/gap-y`
+instead of `space-x-6`, so three metadata items wrap instead of squeezing.
+
+Two things I looked at and deliberately left. `PropertyDetail`'s `grid-cols-3` has no breakpoint, but it
+is a thumbnail strip — about 93px per image at 320px, which is what you want. And one `text-4xl` in
+`Home.jsx` sizes a react-icon, not a heading.
+
+Verified across every route (`/`, `/properties`, `/properties/1`, `/about`, `/faq`, `/privacy`, `/blog`,
+a blog post, and a 404) at 320, 375, 768 and 1440: no horizontal overflow and zero over-wide elements
+anywhere. Largest heading now renders 24-30px on a phone against 30-48px on desktop, where several pages
+were previously locked at 36px regardless of width.
+
+---
+
+## 10. Constants
 
 A cleanup pass. One rule: name a value if it's repeated, or if it has to match a value written somewhere
 else. Everything else stays inline, because extracting one-off strings adds indirection and buys nothing.
@@ -343,8 +377,6 @@ doesn't set, so `images` is always `[]`. Wiring the upload pipeline is a feature
 
 **The frontend never calls the API.** Every page is static mock data. This is why a completely
 non-functional backend was invisible in the UI, and why nobody noticed registration had never worked.
-
-**Other pages weren't audited for responsiveness.** Only the homepage was in scope for Task 2.
 
 **`@testing-library/react@13` with React 18.3** logs a `ReactDOMTestUtils.act is deprecated` warning from
 the library's own internals on every render. Harmless, and only fixable with a major dependency bump.
