@@ -55,7 +55,13 @@ export function WalletProvider({ children }) {
     return () => { mounted.current = false; };
   }, []);
 
-  const hasProvider = useMemo(() => Boolean(getMetaMaskProvider()), []);
+  // Held in state, not read ad hoc, so the listener effect below re-runs if the
+  // provider only becomes available after mount. MetaMask usually injects
+  // window.ethereum before React mounts, but not always — and if we only looked
+  // once at mount, a late injection would leave `accountsChanged` unsubscribed
+  // for the lifetime of the page, silently ignoring every account switch.
+  const [provider, setProvider] = useState(getMetaMaskProvider);
+  const hasProvider = Boolean(provider);
 
   const disconnect = useCallback(() => {
     // MetaMask exposes no programmatic disconnect — a dapp can only forget the
@@ -66,19 +72,22 @@ export function WalletProvider({ children }) {
   }, []);
 
   const connect = useCallback(async () => {
-    const provider = getMetaMaskProvider();
+    // Re-resolve rather than trusting the mounted value: this is the moment a
+    // late-injected provider gets picked up and published to the listener effect.
+    const active = getMetaMaskProvider();
 
-    if (!provider) {
+    if (!active) {
       setError('MetaMask is not installed.');
       return;
     }
 
+    setProvider(active);
     setIsConnecting(true);
     setError(null);
 
     try {
-      const accounts = await provider.request({ method: 'eth_requestAccounts' });
-      const currentChain = await provider.request({ method: 'eth_chainId' });
+      const accounts = await active.request({ method: 'eth_requestAccounts' });
+      const currentChain = await active.request({ method: 'eth_chainId' });
 
       if (!mounted.current) return;
 
@@ -95,7 +104,6 @@ export function WalletProvider({ children }) {
   // counterpart to `eth_requestAccounts`: it never opens the MetaMask popup, so a
   // page refresh keeps the connected state without nagging the user.
   useEffect(() => {
-    const provider = getMetaMaskProvider();
     if (!provider) return undefined;
 
     let cancelled = false;
@@ -116,11 +124,10 @@ export function WalletProvider({ children }) {
     })();
 
     return () => { cancelled = true; };
-  }, []);
+  }, [provider]);
 
   // Keep in sync with the wallet: account switches, locking, and network changes.
   useEffect(() => {
-    const provider = getMetaMaskProvider();
     if (!provider?.on) return undefined;
 
     const handleAccountsChanged = (accounts) => {
@@ -143,7 +150,7 @@ export function WalletProvider({ children }) {
       provider.removeListener?.('accountsChanged', handleAccountsChanged);
       provider.removeListener?.('chainChanged', handleChainChanged);
     };
-  }, []);
+  }, [provider]);
 
   const value = useMemo(
     () => ({

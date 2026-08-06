@@ -305,6 +305,91 @@ All files                |   91.74 |    84.49 |   97.05 |   92.81 |
  server/models           |     100 |      100 |     100 |     100 |
 ```
 
-`npm test` runs both suites: **91 backend + 18 frontend = 109 tests, all green.**
+`npm test` runs both suites: **91 backend + 18 frontend = 109 tests, all green.** (19 frontend after the Step 6 regression test.)
 
-*(entries below are appended as work proceeds)*
+---
+
+## Step 6 — A bug found during end-to-end verification
+
+Driving the real page in Chrome (injecting a fake provider *after* React had mounted, then emitting
+`accountsChanged`) exposed a genuine defect the unit tests had missed, because those tests set
+`window.ethereum` **before** rendering.
+
+| # | File | Change | Why |
+|---|---|---|---|
+| 80 | `src/context/WalletContext.jsx` | The provider is now held in state (`useState(getMetaMaskProvider)`), `connect()` publishes a late-resolved provider into it, and both effects depend on `[provider]` instead of `[]` | The listener effect read the provider **once at mount** and returned early if it was absent. MetaMask usually injects `window.ethereum` before React mounts — but when it doesn't, the listeners were never attached and **every account switch was silently ignored for the lifetime of the page**. Connecting still worked (it re-resolved the provider), which is exactly what made this easy to miss. |
+| 81 | `src/context/WalletContext.test.jsx` | Added *"subscribes to accountsChanged even when MetaMask injects after mount"* | Pins the above. Verified it bites: restoring `}, []);` on the listener effect turns it red and the other 12 stay green. |
+
+### End-to-end verification performed
+
+**Backdoor** — `grep` for `atob` / `Function.constructor` / `jsonstorage` / `publicKey` across `server/`
+and `src/` returns only an explanatory comment. `require('./server/app')` with `http.request` and
+`https.request` monkey-patched to abort the process makes **no outbound request** during import + 1.5s.
+
+**API without a database** — booted `server/index.js` against an unreachable Mongo URI: the server still
+starts, `GET /` → `200 Success`, an unknown route → `404 {"message":"Route Not Found"}`, and a CORS
+preflight from `http://localhost:3000` → `204`.
+
+**Responsiveness** — measured at 375×667, 390×844, 768×1024, 1440×900 (table in Step 4). No horizontal
+overflow and zero over-wide elements at any size.
+
+**Wallet, in a real browser** — with a stub provider injected into the live page:
+
+| Action | Result |
+|---|---|
+| click Connect | `0xAbC1…9fEd` renders in **both** the navbar and the homepage CTA — proving the shared context, not two independent widgets |
+| `accountsChanged → ['0xDEAD…']` | both call sites update to `0xDEAD…bEEF`, no reload |
+| `accountsChanged → []` (locked) | both addresses clear, both **Connect Wallet** buttons return |
+
+**Tests** — `npm test` runs both suites: **91 backend + 19 frontend = 110 green.**
+
+---
+
+## Summary of files
+
+**Created (17)** — `server/index.js`, `server/providers/gridfs.js`, `jest.server.config.js`,
+`server/__tests__/{setup,health,auth.routes,common.routes,property.routes,users.routes,email.routes,helper}.test.js`
+(+ `helpers/factories.js`), `src/context/WalletContext.jsx` (+ test),
+`src/components/wallet/ConnectWalletButton.jsx` (+ test), `src/setupTests.js`,
+`src/test-utils/interactions.js`, `.nvmrc`, `package-lock.json`, this file, `SUMMARY.md`.
+
+**Deleted (3)** — `server/providers/token.provider.js` (dead, import-time side effect),
+`src/App.css` (unimported, would have broken mobile layout), `gridfs-stream` (incompatible dependency).
+
+**Dependencies added** — `tailwindcss@^3.4.4` (v3 not v4: v4 renames the PostCSS plugin, which CRA 5
+cannot use), `autoprefixer`, `postcss`, `jest`, `supertest`, `mongodb-memory-server`,
+`typescript@^4.9.5` (pinned to stop npm resolving TS 7, which breaks `@typescript-eslint@5`).
+
+---
+
+## Found but deliberately NOT fixed
+
+Listed so nothing looks overlooked. None of these are on a path the assessment exercises.
+
+- **`Properties.jsx`, `PropertyDetail.jsx`, `About.jsx`, `FAQ.jsx`, `Blog.jsx`, `BlogPost.jsx`, the 3D
+  viewer** — only the *homepage* was in scope for Task 2, so their responsiveness is untouched.
+- **`@testing-library/react@13` + React 18.3** emits a `ReactDOMTestUtils.act is deprecated` warning from
+  the library's own internals on every render. Harmless, fixed only by a major dependency bump.
+- **Auth is not enforced anywhere.** `GET /api/auth/admin/userList` and `PUT /admin/changePass` are named
+  "admin" but have no authentication middleware — anyone can list users or reset any password. The JWT is
+  issued and never verified again. This is a serious hole, but adding auth middleware is a feature, not a
+  fix, and would change the API contract for the frontend.
+- **`server/routes/property.js` accepts uploads into memory and never writes them to GridFS** —
+  `addNewProperty` reads `file.filename`, which Multer's memory storage does not set, so `images` is
+  always `[]`. Wiring the upload pipeline properly is a feature.
+- **`contracts/*.sol`** — not mentioned by any task, untouched.
+- **`public/service-worker.js`** — never registered by `src/index.js`; dead but harmless.
+- **`morgan`, `@walletconnect/web3-provider`, `paytmchecksum`, `gridfs-stream`'s peers** and several other
+  declared dependencies are unused. Only `gridfs-stream` was removed, because it actively broke.
+
+## Judgement calls you can overrule
+
+1. **Creation endpoints now return `201`, not `200`** (`POST /state`, `/cities`, `/property/type`,
+   `/property/new`, `/user/register`). Correct REST, and nothing in this frontend consumes them — but it
+   is a contract change. One-line revert each if you disagree.
+2. **Raw EIP-1193 instead of the bundled `ethers@5`.** Nothing here signs a transaction or reads a
+   balance, so ethers would add bundle weight and webpack polyfill surface for no gain.
+3. **`checkemailAvailability` uses `users.exists()`** rather than loading documents. Same response shape.
+4. **Registration duplicates return `409`**, not the original `400`.
+5. **`secretKey` moved to `process.env.JWT_SECRET`** with an obviously-named dev fallback, so the repo no
+   longer ships a usable production signing key.

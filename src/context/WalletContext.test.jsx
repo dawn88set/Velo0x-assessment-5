@@ -191,6 +191,25 @@ describe('WalletProvider', () => {
     expect(screen.getByTestId('account')).toHaveTextContent('none');
   });
 
+  it('subscribes to accountsChanged even when MetaMask injects after mount', async () => {
+    // Regression: the listener effect used to read the provider once at mount and
+    // bail out if it was absent. MetaMask normally injects window.ethereum before
+    // React mounts, but when it is late the listeners were never attached, so
+    // every subsequent account switch was silently ignored for the page lifetime.
+    renderWallet(); // no window.ethereum yet
+
+    const provider = createProvider();
+    window.ethereum = provider;
+
+    await click(screen.getByRole('button', { name: 'Connect' }));
+    await waitFor(() => expect(screen.getByTestId('account')).toHaveTextContent(ACCOUNT));
+
+    const nextAccount = '0xfeedfeedfeedfeedfeedfeedfeedfeedfeedfeed';
+    act(() => provider.emit('accountsChanged', [nextAccount]));
+
+    await waitFor(() => expect(screen.getByTestId('account')).toHaveTextContent(nextAccount));
+  });
+
   it('removes its listeners on unmount', async () => {
     const provider = createProvider();
     window.ethereum = provider;
