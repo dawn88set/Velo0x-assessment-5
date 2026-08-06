@@ -77,6 +77,10 @@ export function WalletProvider({ children }) {
     const active = getMetaMaskProvider();
 
     if (!active) {
+      // Clear the cached provider too, otherwise `hasProvider` stays true from
+      // mount and the UI withholds the "Install MetaMask" link while telling the
+      // user MetaMask is missing.
+      setProvider(null);
       setError('MetaMask is not installed.');
       return;
     }

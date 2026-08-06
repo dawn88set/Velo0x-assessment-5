@@ -341,7 +341,43 @@ overflow and zero over-wide elements at any size.
 | `accountsChanged → ['0xDEAD…']` | both call sites update to `0xDEAD…bEEF`, no reload |
 | `accountsChanged → []` (locked) | both addresses clear, both **Connect Wallet** buttons return |
 
-**Tests** — `npm test` runs both suites: **91 backend + 19 frontend = 110 green.**
+**Tests** — `npm test` runs both suites: **91 backend + 21 frontend = 112 green.**
+
+---
+
+## Step 7 — Wallet errors moved into a tooltip
+
+Feedback during live testing: the connection error was plain red text under the button. Replaced with an
+anchored popover.
+
+| # | File | Change |
+|---|---|---|
+| 82 | `src/components/wallet/WalletTooltip.jsx` | **Created** — dark popover with an arrow, amber alert icon, dismiss button, framer-motion fade/scale, Escape-to-close |
+| 83 | `src/components/wallet/ConnectWalletButton.jsx` | Error `<p>` → `<WalletTooltip>`; added a `tooltipAlign` prop; wrapper is now always `relative` |
+| 84 | `src/components/layout/Navbar.jsx` | Desktop button passes `tooltipAlign="right"` |
+| 85 | `src/context/WalletContext.jsx` | `connect()` now calls `setProvider(null)` when no provider is found |
+
+Design notes: positioned `absolute` so it never reflows the page (the old `<p>` pushed the navbar row
+taller); `align` picks the anchor edge because the navbar button sits against the right gutter and a
+centred panel would hang off-screen; `role="alert"` retained so the change is not an accessibility
+regression.
+
+### A bug this surfaced
+
+Entry 85 is a real fix, found because the tooltip rendered *"MetaMask is not installed"* **without** the
+install link. `hasProvider` derived from the provider captured at mount, so if the extension was present
+at mount and gone by click time, the UI claimed MetaMask was missing while withholding the link that
+fixes it. Two tests added (`ConnectWalletButton.test.jsx`): one pinning the stale-`hasProvider` case, one
+covering tooltip dismissal. **Frontend suite: 19 → 21 tests.**
+
+### Verified against real MetaMask
+
+The earlier "not installed" report turned out to be genuine at that moment — `window.ethereum` was
+undefined and nothing announced over EIP-6963 (MetaMask 13.42 was on disk but not active in the profile).
+Once it initialised, the full real-wallet flow was exercised end to end: connect → MetaMask approval
+prompt → `0xd106…d5dd` rendered in **both** the navbar and the homepage CTA; a page reload restored the
+account **silently via `eth_accounts`, with no popup**, confirming the eager-reconnect path works against
+the real extension; disconnect cleared both call sites.
 
 ---
 

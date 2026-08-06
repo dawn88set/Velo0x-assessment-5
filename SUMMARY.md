@@ -5,7 +5,7 @@
 ```bash
 nvm use 20
 npm install
-npm test     # 91 backend + 19 frontend = 110 tests
+npm test     # 91 backend + 21 frontend = 112 tests
 npm start    # client :3000, API :5001
 ```
 

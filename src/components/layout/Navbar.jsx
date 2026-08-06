@@ -50,7 +50,9 @@ function Navbar() {
                 <span className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-primary-500 to-primary-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
               </Link>
             ))}
-            <ConnectWalletButton />
+            {/* Right-aligned: this button sits against the right gutter, so a
+                centred tooltip would hang off the edge of the viewport. */}
+            <ConnectWalletButton tooltipAlign="right" />
           </div>
 
           {/* Mobile menu button */}

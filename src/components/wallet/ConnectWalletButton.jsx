@@ -3,14 +3,24 @@ import { FaWallet } from 'react-icons/fa';
 import { FiCheck, FiCopy, FiLogOut } from 'react-icons/fi';
 
 import { METAMASK_DOWNLOAD_URL, formatAddress, useWallet } from '../../context/WalletContext';
+import WalletTooltip from './WalletTooltip';
 
 /**
  * The single Connect / connected-address control, used in the navbar (desktop and
  * mobile) and in the homepage CTA. `className` lets each site restyle it without
  * duplicating the behaviour.
+ *
+ * `tooltipAlign` decides which edge the error popover hangs from — see WalletTooltip.
  */
-function ConnectWalletButton({ className = 'btn', fullWidth = false, showIcon = true }) {
-  const { account, isConnected, isConnecting, error, hasProvider, connect, disconnect } = useWallet();
+function ConnectWalletButton({
+  className = 'btn',
+  fullWidth = false,
+  showIcon = true,
+  tooltipAlign = 'center',
+}) {
+  const {
+    account, isConnected, isConnecting, error, hasProvider, connect, disconnect, clearError,
+  } = useWallet();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -98,7 +108,7 @@ function ConnectWalletButton({ className = 'btn', fullWidth = false, showIcon = 
   }
 
   return (
-    <div className={fullWidth ? 'w-full' : 'relative'}>
+    <div className={`relative ${fullWidth ? 'w-full' : ''}`}>
       <button
         type="button"
         className={`${className} ${widthClass} disabled:cursor-not-allowed disabled:opacity-60`}
@@ -110,24 +120,22 @@ function ConnectWalletButton({ className = 'btn', fullWidth = false, showIcon = 
         {isConnecting ? 'Connecting…' : 'Connect Wallet'}
       </button>
 
-      {error && (
-        <p role="alert" className="mt-2 max-w-[16rem] text-xs text-red-600">
-          {error}
-          {!hasProvider && (
-            <>
-              {' '}
-              <a
-                href={METAMASK_DOWNLOAD_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline"
-              >
-                Install MetaMask
-              </a>
-            </>
-          )}
-        </p>
-      )}
+      <WalletTooltip open={Boolean(error)} onClose={clearError} align={tooltipAlign}>
+        <span>{error}</span>
+        {!hasProvider && (
+          <>
+            {' '}
+            <a
+              href={METAMASK_DOWNLOAD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="whitespace-nowrap font-medium text-primary-300 underline decoration-primary-300/40 underline-offset-2 transition-colors hover:text-primary-200"
+            >
+              Install MetaMask
+            </a>
+          </>
+        )}
+      </WalletTooltip>
     </div>
   );
 }

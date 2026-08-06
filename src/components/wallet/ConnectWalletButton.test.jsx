@@ -65,6 +65,31 @@ describe('ConnectWalletButton', () => {
       .toHaveAttribute('href', 'https://metamask.io/download/');
   });
 
+  it('still offers the install link when the wallet disappears after mount', async () => {
+    // Regression: hasProvider was captured at mount, so if the extension was
+    // present then and gone by the time Connect was clicked, the UI said
+    // "MetaMask is not installed" while withholding the install link.
+    mockMetaMask();
+    renderButton();
+
+    delete window.ethereum;
+    await click(screen.getByRole('button', { name: /connect wallet/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('MetaMask is not installed.');
+    expect(screen.getByRole('link', { name: /install metamask/i })).toBeInTheDocument();
+  });
+
+  it('dismisses the error tooltip via its close button', async () => {
+    renderButton();
+
+    await click(screen.getByRole('button', { name: /connect wallet/i }));
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+
+    await click(screen.getByRole('button', { name: /dismiss/i }));
+
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+  });
+
   it('surfaces a rejection as an alert and stays disconnected', async () => {
     const rejection = Object.assign(new Error('User rejected'), { code: 4001 });
     mockMetaMask({ requestAccounts: () => Promise.reject(rejection) });
