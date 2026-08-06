@@ -236,4 +236,75 @@ carry `loading="lazy"`; five FAQ toggles expose `aria-expanded`.
 > change was reverted. No contrast change ships. The `p-6 sm:p-8` padding fix was kept because it stands
 > on its own.
 
+---
+
+## Step 5 — Task 3: Backend tests
+
+### "Review the existing backend tests"
+
+**There were none.** No test file, no test script, no `jest`/`supertest`/`mocha` dependency anywhere in
+the repo — `find . -name "*.test.js"` returned nothing at the initial commit. So the "fix failing tests"
+half of the task became: fix the *code* that made every DB-backed route fail (Step 2, entries 20–40),
+then write the suite from scratch.
+
+### Test infrastructure
+
+| # | File | Purpose |
+|---|---|---|
+| 69 | `jest.server.config.js` | node environment, `server/**/*.test.js`, 30s timeout (first run downloads a mongod binary) |
+| 70 | `server/__tests__/setup.js` | in-memory Mongo up in `beforeAll`, every collection emptied in `afterEach`, torn down in `afterAll`; `@sendgrid/mail` mocked globally so no suite can make a real API call |
+| 71 | `server/__tests__/helpers/factories.js` | builders for states, cities, users, property types and properties |
+
+Documents are **deleted** rather than their collections dropped between tests — dropping would also drop
+the unique indexes the duplicate-registration tests depend on. Factory defaults are suffixed from a
+counter because `state.name`, `city.name`, `users.email` and `users.phoneNo` all carry unique indexes;
+without that, calling a factory twice fails on a duplicate key instead of on the thing under test.
+
+Tests drive the exported app through `supertest` — no port binding, no real Mongo, no network.
+
+### The suites — 91 tests, 7 files
+
+| # | File | Tests | Covers |
+|---|---|---|---|
+| 72 | `health.test.js` | 5 | `GET /`, JSON 404 from `notFound`, **JSON and urlencoded body parsing**, malformed JSON → 400 not a crash |
+| 73 | `auth.routes.test.js` | 19 | registration, login, `userList`, `changePass` |
+| 74 | `common.routes.test.js` | 14 | states, cities, email availability |
+| 75 | `property.routes.test.js` | 25 | types, creation, listing, single, markAsSold, filters, GridFS |
+| 76 | `users.routes.test.js` | 4 | user detail, 404, 400, no password leak |
+| 77 | `email.routes.test.js` | 12 | SendGrid contract against the mock |
+| 78 | `helper.test.js` | 12 | `isKeyMissing`, `slugGenerator` |
+
+Tests that exist specifically to pin a bug found during the migration:
+
+- **`markAsSold` updates the status** — `Property.update()` + `result.nModified`; both wrong, so the
+  endpoint could never succeed. Verified this test bites: reintroducing `result.nModified` turns it red
+  and the other 24 stay green.
+- **registration persists the surname** — the `req.body.lName` typo against a `required` field.
+- **stored password is a bcrypt hash** — asserts the `$2a$`/`$2b$` prefix *and* round-trips
+  `bcrypt.compare`.
+- **unknown user and wrong password give byte-identical responses** — the original
+  `Invalid Credentials1`/`Invalid Credentials2` split allowed account enumeration.
+- **duplicate state name returns exactly one response** — the missing `else` used to send two and throw
+  `ERR_HTTP_HEADERS_SENT`.
+- **slug collisions increment** — `luxury-villa` → `-1` → `-2`, plus a gap case.
+- **`userList` and `GET /api/user/:id` omit the password hash.**
+- **SendGrid failures return `{message}`**, not the provider's raw error object.
+
+### One more fix the tests forced
+
+| # | File | Change | Why |
+|---|---|---|---|
+| 79 | `server/middleware/errorHandler.js` | duplicate-key (`err.code === 11000`) → **409** centrally; only genuine 5xx are `console.error`'d; `ValidationError`/`CastError` map to 400 while an explicit 404 keeps its status | Writing the tests showed unique-index violations surfacing as `500 Internal Server Error` with a stack trace on stderr. (First attempt used `Math.min(rawStatus, 400)`, which downgraded the 404 too — caught and fixed.) |
+
+### Coverage
+
+```
+All files                |   91.74 |    84.49 |   97.05 |   92.81 |
+ server/controllers      |   86.48 |    82.19 |   95.83 |      87 |
+ server/routes           |     100 |       90 |     100 |     100 |
+ server/models           |     100 |      100 |     100 |     100 |
+```
+
+`npm test` runs both suites: **91 backend + 18 frontend = 109 tests, all green.**
+
 *(entries below are appended as work proceeds)*

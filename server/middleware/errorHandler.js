@@ -13,19 +13,31 @@ const notFound = (req, res, next) => {
  */
 // eslint-disable-next-line no-unused-vars
 const errorHandler = (err, req, res, next) => {
-  const status = err.status || err.statusCode || 500;
+  const rawStatus = err.status || err.statusCode || 500;
 
-  // Mongoose validation / cast errors are client errors, not server errors.
-  const isClientError =
-    err.name === 'ValidationError' || err.name === 'CastError' || status < 500;
-
-  const message = isClientError ? err.message : 'Internal Server Error';
-
-  if (status >= 500) {
-    console.error(err);
+  // A duplicate key is the client asking for something that already exists.
+  if (err.code === 11000) {
+    const field = Object.keys(err.keyPattern || {})[0];
+    return res.status(409).json({
+      message: field ? `${field} already exists` : 'Already exists',
+    });
   }
 
-  res.status(isClientError && status >= 500 ? 400 : status).json({ message });
+  // Mongoose validation / cast errors mean the client sent something wrong,
+  // so they are 400s rather than 500s.
+  const isClientError =
+    err.name === 'ValidationError' || err.name === 'CastError' || rawStatus < 500;
+
+  // A ValidationError/CastError carries no status of its own, so it arrives as
+  // 500 and must be mapped down. An explicit 404 keeps its own status.
+  const status = isClientError && rawStatus >= 500 ? 400 : rawStatus;
+
+  // Only genuine server faults are logged, and only their message is exposed.
+  if (!isClientError) console.error(err);
+
+  return res.status(status).json({
+    message: isClientError ? err.message : 'Internal Server Error',
+  });
 };
 
 module.exports = { notFound, errorHandler };
