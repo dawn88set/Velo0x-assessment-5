@@ -6,6 +6,8 @@ import { FaWallet, FaStore, FaMoneyBillWave, FaExchangeAlt, FaChartLine, FaLock,
 import { SiEthereum } from 'react-icons/si';
 import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
 
+import ConnectWalletButton from '../components/wallet/ConnectWalletButton';
+
 function Home() {
   const [openSections, setOpenSections] = useState({});
 
@@ -425,12 +427,7 @@ function Home() {
               >
                 Browse Properties
               </Link>
-              <button
-                className="btn bg-gradient-to-r from-primary-700 to-primary-800 hover:from-primary-800 hover:to-primary-900"
-              >
-                <FaWallet className="mr-2" />
-                Connect Wallet
-              </button>
+              <ConnectWalletButton className="btn bg-gradient-to-r from-primary-700 to-primary-800 hover:from-primary-800 hover:to-primary-900" />
             </div>
           </div>
         </div>

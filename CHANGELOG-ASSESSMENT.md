@@ -110,4 +110,61 @@ Mongoose 7 removed callback support from queries. Every controller in this repo 
 | 39 | `models/{property,propertyTypes,users}.js` | `default: Date.now()` — **called once at module load**, so every document got the server's boot time | `default: Date.now` (pass the function) |
 | 40 | `models/{propertyTypes,users}.js` | `propertyTypesSchema = …` / `userSchema = …` — implicit globals | `const` |
 
+---
+
+## Step 3 — Task 1: MetaMask wallet connection
+
+The **Connect** button existed in three places, all with no `onClick` at all:
+`Navbar.jsx:42` (desktop), `Navbar.jsx:75` (mobile), `Home.jsx:428` (CTA).
+Because the address has to appear in all three, this is shared state → context, not a local hook.
+
+| # | File | Change |
+|---|---|---|
+| 41 | `src/context/WalletContext.jsx` | **Created** — `WalletProvider` + `useWallet()`, built on raw EIP-1193 |
+| 42 | `src/components/wallet/ConnectWalletButton.jsx` | **Created** — the single control used by all three call sites |
+| 43 | `src/App.jsx` | Wrapped the tree in `<WalletProvider>`; also fixed the malformed `<Route path = '*' element={<NotFound/>} />` spacing |
+| 44 | `src/components/layout/Navbar.jsx` | Both hardcoded buttons → `<ConnectWalletButton />` |
+| 45 | `src/pages/Home.jsx` | CTA button → `<ConnectWalletButton />` |
+| 46 | `src/setupTests.js` | **Created** — `@testing-library/jest-dom` was a dependency but was never registered, so **every jest-dom matcher silently didn't exist** |
+| 47 | `src/test-utils/interactions.js` | **Created** — act-wrapped click helper (see note below) |
+| 48 | `src/context/WalletContext.test.jsx` | **Created** — 12 tests |
+| 49 | `src/components/wallet/ConnectWalletButton.test.jsx` | **Created** — 6 tests |
+
+### How each requirement is met
+
+**Connection** — `eth_requestAccounts` on the MetaMask provider specifically. `getMetaMaskProvider()`
+prefers `window.ethereum.providers.find(p => p.isMetaMask)` before falling back to
+`window.ethereum.isMetaMask`, because when several wallet extensions are installed they race to own
+`window.ethereum` and the winner may be Coinbase or Phantom. A non-MetaMask injected provider is
+treated as "not installed" rather than being driven blindly.
+
+**Displaying the address** — `formatAddress()` renders `0x1234…5678` in a monospace span with a green
+status dot, plus a menu offering Copy address / Disconnect.
+
+**Account changes** — an `accountsChanged` listener. An empty array (user locked MetaMask or revoked
+site access) clears the state; otherwise it swaps to the new account and clears any stale error. A
+`chainChanged` listener tracks the network. Both are removed on unmount via `removeListener`.
+
+**Error handling** — mapped from EIP-1193 codes to something actionable:
+
+| Condition | Message |
+|---|---|
+| no MetaMask | `MetaMask is not installed.` + an **Install MetaMask** link |
+| `4001` | `Connection request rejected.` |
+| `-32002` | `A connection request is already pending — open the MetaMask extension.` |
+| anything else | the provider's own message |
+
+Errors render in a `role="alert"` node; the button carries `aria-busy` and is disabled mid-flight.
+
+**Beyond the brief:** a silent `eth_accounts` call on mount restores an already-authorised account
+across page refreshes *without* triggering the MetaMask popup — the difference between
+`eth_accounts` and `eth_requestAccounts` is the whole point, and there's a test asserting the popup
+method is never called on that path.
+
+> **Note on `src/test-utils/interactions.js`:** this project pins `@testing-library/user-event@^13`,
+> where `click()` is synchronous — so `await userEvent.click(...)` does *not* flush the promise chain
+> that our async state updates depend on, and React logs "not wrapped in act(...)" for every test.
+> The helper wraps the click in an async `act`. (v14 made `click` async and this would be unnecessary;
+> bumping the dependency felt out of scope for the assessment.)
+
 *(entries below are appended as work proceeds)*
