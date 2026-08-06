@@ -393,3 +393,68 @@ Listed so nothing looks overlooked. None of these are on a path the assessment e
 4. **Registration duplicates return `409`**, not the original `400`.
 5. **`secretKey` moved to `process.env.JWT_SECRET`** with an obviously-named dev fallback, so the repo no
    longer ships a usable production signing key.
+
+---
+
+## Git record (cross-check)
+
+```
+$ git log --oneline
+a4eb60e fix(wallet): subscribe to accountsChanged when MetaMask injects after mount
+cefe7b9 test(server): add the backend test suite (Task 3)
+4ef0eea fix(responsive): make the homepage work on mobile, tablet and desktop (Task 2)
+b27766c feat(wallet): implement MetaMask connection (Task 1)
+49e3adb chore(build)+refactor(server): make the project compile, boot, and survive Mongoose 8
+2387365 security: remove remote-code-execution backdoor from the server
+bb58a11 initial commit
+
+$ git diff --stat bb58a11..HEAD -- . ':(exclude)package-lock.json'
+ .nvmrc                                             |   1 +
+ CHANGELOG-ASSESSMENT.md                            | 395 +++++++++++++++++++++
+ SUMMARY.md                                         | 139 ++++++++
+ jest.server.config.js                              |  20 ++
+ package.json                                       |  14 +-
+ public/index.html                                  |   2 +-
+ server/__tests__/auth.routes.test.js               | 201 +++++++++++
+ server/__tests__/common.routes.test.js             | 149 ++++++++
+ server/__tests__/email.routes.test.js              |  98 +++++
+ server/__tests__/health.test.js                    |  47 +++
+ server/__tests__/helper.test.js                    |  85 +++++
+ server/__tests__/helpers/factories.js              |  94 +++++
+ server/__tests__/property.routes.test.js           | 290 +++++++++++++++
+ server/__tests__/setup.js                          |  32 ++
+ server/__tests__/users.routes.test.js              |  43 +++
+ server/app.js                                      |  66 ++--
+ server/config/config.js                            |  12 +-
+ server/controllers/auth.controller.js              | 206 ++++++-----
+ server/controllers/common.controller.js            | 145 ++++----
+ server/controllers/property.controller.js          | 336 +++++++++---------
+ server/controllers/users.controller.js             |  41 ++-
+ server/index.js                                    |  22 ++
+ server/middleware/errorHandler.js                  |  58 +--
+ server/models/property.js                          |   4 +-
+ server/models/propertyTypes.js                     |   4 +-
+ server/models/users.js                             |   4 +-
+ server/providers/gridfs.js                         |  32 ++
+ server/providers/helper.js                         |  54 +--
+ server/providers/token.provider.js                 |  10 -
+ server/routes/auth.js                              |  16 +-
+ server/routes/common.js                            |  25 +-
+ server/routes/email.js                             |  53 ++-
+ server/routes/property.js                          |  28 +-
+ server/routes/users.js                             |   5 +-
+ src/App.css                                        |   6 -
+ src/App.jsx                                        |  39 +-
+ src/components/layout/Navbar.jsx                   |  53 +--
+ src/components/wallet/ConnectWalletButton.jsx      | 135 +++++++
+ src/components/wallet/ConnectWalletButton.test.jsx | 108 ++++++
+ src/context/WalletContext.jsx                      | 179 ++++++++++
+ src/context/WalletContext.test.jsx                 | 225 ++++++++++++
+ src/pages/Home.jsx                                 |  59 +--
+ src/setupTests.js                                  |   5 +
+ src/test-utils/interactions.js                     |  17 +
+ tailwind.config.js                                 |   6 +-
+ 45 files changed, 2955 insertions(+), 608 deletions(-)
+```
+
+(`package-lock.json` excluded from the stat: it is 29k generated lines.)
