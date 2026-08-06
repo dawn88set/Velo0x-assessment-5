@@ -1,6 +1,12 @@
 /** @type {import('tailwindcss').Config} */
 // Must stay CommonJS: Create React App loads this file with `require()`.
 module.exports = {
+  // Compiles every `hover:` utility inside `@media (hover: hover)`, so hover
+  // states never fire on touch devices. Without this, tapping a card on a phone
+  // leaves it stuck in its hover state until you tap elsewhere.
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
   content: [
     "./public/index.html",
     "./src/**/*.{js,jsx}"

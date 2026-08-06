@@ -8,6 +8,22 @@ import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
 
 import ConnectWalletButton from '../components/wallet/ConnectWalletButton';
 
+/**
+ * One easing curve and one stagger step shared by every entrance animation, so
+ * the page reads as a single continuous wave instead of each grid running its
+ * own timing. easeOutQuint-style: quick to start, long soft landing.
+ */
+const EASE = [0.22, 1, 0.36, 1];
+const STAGGER = 0.09;
+
+/** Spread onto a motion element to have it rise into view in sequence. */
+const riseIn = (index = 0) => ({
+  initial: { opacity: 0, y: 28 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, amount: 0.15 },
+  transition: { duration: 0.7, delay: index * STAGGER, ease: EASE },
+});
+
 function Home() {
   const [openSections, setOpenSections] = useState({});
 
@@ -265,12 +281,9 @@ function Home() {
             <motion.div
               key={index}
               className="relative"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.2 }}
+              {...riseIn(index)}
             >
-              <div className="glass-card p-6 text-center group hover:shadow-glass-xl transition-all duration-500">
+              <div className="glass-card flat-on-mobile p-6 text-center group hover:shadow-glass-xl transition-all duration-500">
                 <div className="bg-gradient-to-br from-primary-100 to-primary-200 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                   <step.icon className="text-2xl text-primary-600" />
                 </div>
@@ -296,11 +309,8 @@ function Home() {
             {howItWorks.map((item, index) => (
               <motion.div
                 key={index}
-                className="glass-card bg-sapphire-800/30 p-6 backdrop-blur-lg border-sapphire-700/30 group hover:bg-sapphire-700/40 transition-all duration-500"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.2 }}
+                className="glass-card flat-on-mobile bg-sapphire-800/30 p-6 backdrop-blur-lg border-sapphire-700/30 group hover:bg-sapphire-700/40 transition-all duration-500"
+                {...riseIn(index)}
               >
                 <div className="bg-gradient-to-br from-primary-500 to-primary-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                   <item.icon className="text-2xl text-white" />
@@ -325,10 +335,7 @@ function Home() {
             <motion.div
               key={property.id}
               className="card group"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.2 }}
+              {...riseIn(index)}
             >
               <div className="relative h-48 rounded-t-2xl overflow-hidden">
                 <img
@@ -397,11 +404,8 @@ function Home() {
             {advantages.map((advantage, index) => (
               <motion.div
                 key={index}
-                className="glass-card p-6 text-center group hover:shadow-glass-xl transition-all duration-500"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.2 }}
+                className="glass-card flat-on-mobile p-6 text-center group hover:shadow-glass-xl transition-all duration-500"
+                {...riseIn(index)}
               >
                 <advantage.icon className="text-4xl text-primary-600 mx-auto mb-4 group-hover:scale-110 transition-transform duration-300" />
                 <h3 className="text-xl font-semibold mb-2 text-sapphire-800">{advantage.title}</h3>
@@ -452,10 +456,7 @@ function Home() {
           {blogPosts.map((post, index) => (
             <motion.article
               key={post.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
+              {...riseIn(index)}
               className="bg-white rounded-lg shadow-md overflow-hidden"
             >
               <Link to={`/blog/${post.slug}`}>

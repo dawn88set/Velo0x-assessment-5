@@ -381,6 +381,60 @@ the real extension; disconnect cleared both call sites.
 
 ---
 
+## Step 8 — Native-feeling mobile pass
+
+Four requests from live testing: overlay menu, drop the card chrome on phones, smoother staggered
+entrances, no hover effects on touch.
+
+| # | File | Change |
+|---|---|---|
+| 86 | `src/components/layout/Navbar.jsx` | Mobile menu moved out of flow → `absolute` overlay + dimmed backdrop, `AnimatePresence` fade/slide, Escape to close, body scroll lock, auto-close on route change |
+| 87 | `src/components/layout/Navbar.jsx` | Panel is full-bleed, **fully opaque** white with hairline row dividers and taller tap targets |
+| 88 | `src/index.css` | `.card` is flat and full-bleed below `sm` (`-mx-4`, no rounding, no shadow, hairline top/bottom); card treatment returns at `sm:` |
+| 89 | `src/index.css` | Added `.flat-on-mobile`, an opt-in companion for large `glass-card` panels |
+| 90 | `src/pages/Home.jsx` | Applied `flat-on-mobile` to the three large panel grids |
+| 91 | `tailwind.config.js` | `future.hoverOnlyWhenSupported: true` |
+| 92 | `src/pages/Home.jsx` | Replaced five ad-hoc `whileInView` configs with a shared `riseIn(index)` helper |
+
+**Overlay, not push.** The menu previously rendered inside the nav's flow, so opening it grew the navbar
+and shoved the page down. It is now `position: absolute` under the header with a `fixed` backdrop.
+Measured: hero stays at `top: 65px` whether the menu is open or closed.
+
+**Why the panel is fully opaque.** At `bg-white/95` the dark hero card behind it showed through and the
+links were hard to read — visible in testing. Now `bg-white`, edge-to-edge (the `.container` wrapper was
+inseting it 16px per side).
+
+**Why `flat-on-mobile` is opt-in rather than baked into `.glass-card`.** `.glass-card` is also used for
+the "Active Investment" pill and the 3D-viewer icon buttons; flattening it globally would square those
+off. `.card` *is* safe to flatten directly — it is only used for the two large property cards.
+
+**Hover.** Rather than prefixing dozens of utilities with `sm:`, `hoverOnlyWhenSupported` compiles every
+`hover:` variant inside `@media (hover: hover) and (pointer: fine)`. Verified in the built CSS:
+`.card:hover`, `.group-hover:scale-105/110` and `.btn:hover` are all inside that gate, so tapping on a
+phone can no longer leave an element stuck in its hover state.
+
+**Entrances.** One `EASE = [0.22, 1, 0.36, 1]` curve and one `STAGGER = 0.09` step, replacing five
+separate configs that used `delay: index * 0.2` with framer-motion's default easing. Longer duration
+(0.7s), larger offset (28px) and `amount: 0.15` so a card starts moving as it enters rather than after.
+
+### Verified
+
+| | mobile 390px | desktop 1280px |
+|---|---|---|
+| card border-radius | `0px` | `32px` |
+| card shadow | none | yes |
+| card left edge | `0` (full bleed) | `32px` (inset) |
+| menu panel | opaque, full-bleed, overlay | n/a (hamburger hidden) |
+| horizontal overflow | none | none |
+
+> **Aside on the test harness:** iframe scrolling had been silently failing throughout this session.
+> Cause: `html { scroll-behavior: smooth }` needs `requestAnimationFrame`, which Chrome throttles to zero
+> in a background tab — so programmatic scrolls never progressed. Overriding to `scroll-behavior: auto`
+> for measurement fixed it. Same root cause as the "frozen" framer-motion animations seen in screenshots
+> throughout; neither affects real users.
+
+---
+
 ## Summary of files
 
 **Created (17)** — `server/index.js`, `server/providers/gridfs.js`, `jest.server.config.js`,

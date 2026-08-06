@@ -32,12 +32,26 @@
     @apply block w-full rounded-xl border-platinum-200 bg-white/80 backdrop-blur-md shadow-luxe focus:border-primary-500 focus:ring-primary-500 sm:text-sm transition-all duration-300;
   }
 
+  /* On phones this is a flush, full-bleed row like a native list: no rounding,
+     no shadow, no side borders, no hover transform (there is no hover on touch).
+     The floating-card treatment returns at sm and up. */
   .card {
-    @apply bg-white/80 backdrop-blur-md rounded-2xl shadow-luxe border border-platinum-200/50 overflow-hidden transition-all duration-300 hover:shadow-glass-lg hover:scale-[1.02];
+    @apply bg-white border-y border-platinum-200 overflow-hidden transition-all duration-300
+           -mx-4 rounded-none
+           sm:mx-0 sm:bg-white/80 sm:backdrop-blur-md sm:rounded-2xl sm:shadow-luxe sm:border sm:border-platinum-200/50
+           hover:shadow-glass-lg hover:scale-[1.02];
   }
 
   .glass-card {
     @apply bg-white/90 backdrop-blur-md rounded-2xl shadow-luxe border border-platinum-200/50;
+  }
+
+  /* Opt-in companion for the large `glass-card` panels. Applied per element
+     because `.glass-card` is also used for small pills and icon buttons, which
+     must keep their rounding. */
+  .flat-on-mobile {
+    @apply -mx-4 rounded-none border-x-0 shadow-none
+           sm:mx-0 sm:rounded-2xl sm:border-x sm:shadow-luxe;
   }
 
   .glass-nav {
