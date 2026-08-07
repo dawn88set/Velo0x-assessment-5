@@ -10,7 +10,7 @@ import WalletTooltip from './WalletTooltip';
  * mobile) and in the homepage CTA. `className` lets each site restyle it without
  * duplicating the behaviour.
  *
- * `tooltipAlign` decides which edge the error popover hangs from — see WalletTooltip.
+ * `tooltipAlign` decides which edge the error popover hangs from. See WalletTooltip.
  */
 function ConnectWalletButton({
   className = 'btn',
@@ -51,7 +51,7 @@ function ConnectWalletButton({
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      // Clipboard permission denied — not worth interrupting the user over.
+      // Clipboard permission denied. Not worth interrupting the user over.
     }
   };
 

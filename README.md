@@ -1,6 +1,6 @@
 # DeFi Real Estate - Take-Home Assessment
 
-> **My submission write-up is in [SUMMARY.md](./SUMMARY.md)** — what I changed, the assumptions I made,
+> **My submission write-up is in [SUMMARY.md](./SUMMARY.md)**: what I changed, the assumptions I made,
 > and one thing I found in this repo that you should read before running it.
 >
 > ```bash

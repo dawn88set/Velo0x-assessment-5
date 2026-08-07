@@ -28,7 +28,7 @@ module.exports = {
 
             const passMatch = user ? await bcrypt.compare(password, user.password) : false;
 
-            // One response for both failures — see AUTH.INVALID_CREDENTIALS.
+            // One response for both failures. See AUTH.INVALID_CREDENTIALS.
             if (!user || !passMatch) {
                 return res.status(status.UNAUTHORIZED).json({ message: AUTH.INVALID_CREDENTIALS });
             }
@@ -59,8 +59,8 @@ module.exports = {
 
             const hash = await bcrypt.hash(password, SALT_ROUNDS);
 
-            // `users = new userM()` in the original was missing `var` — an implicit
-            // global shared across concurrent requests.
+            // `users = new userM()` in the original was missing `var`, making it an
+            // implicit global shared across concurrent requests.
             const user = new userM({
                 fname: req.body.fname,
                 // Was `req.body.lName`. `lname` is required by the schema, so with

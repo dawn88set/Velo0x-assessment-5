@@ -13,7 +13,7 @@ function Navbar() {
   useEffect(() => setIsOpen(false), [location.pathname]);
 
   // While the overlay is up: Escape closes it, and the page behind must not
-  // scroll — otherwise the backdrop sits still while content slides underneath.
+  // scroll, otherwise the backdrop sits still while content slides underneath.
   useEffect(() => {
     if (!isOpen) return undefined;
 
@@ -95,7 +95,7 @@ function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Navigation — an overlay, not part of the flow, so opening it
+      {/* Mobile navigation. An overlay rather than part of the flow, so opening it
           floats over the page instead of pushing the content down. */}
       <AnimatePresence>
         {isOpen && (

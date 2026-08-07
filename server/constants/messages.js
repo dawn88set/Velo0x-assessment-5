@@ -2,10 +2,10 @@
  * Every message this API sends back to a client.
  *
  * These live here because the test suites assert on them. When the text was
- * inlined in the controllers, each message existed twice — once in the handler
- * and once as a re-typed string in the matching test — so changing the wording
- * meant hunting for the copy in the spec file, and a mismatch only showed up as
- * a confusing test failure. Now both sides import the same value.
+ * inlined in the controllers, each message existed twice: once in the handler,
+ * once as a re-typed string in the matching test. Changing the wording meant
+ * hunting for the copy in the spec file, and a mismatch only showed up as a
+ * confusing test failure. Now both sides import the same value.
  */
 module.exports = {
     AUTH: {

@@ -10,7 +10,7 @@ const { PROPERTY_FOR, PROPERTY_CATEGORY } = require('../../constants/domain');
  * override object so a test can vary only the field it cares about.
  *
  * `state.name`, `city.name`, `users.email` and `users.phoneNo` all carry unique
- * indexes, so defaults are suffixed from a counter — otherwise calling a factory
+ * indexes, so defaults are suffixed from a counter. Otherwise calling a factory
  * twice in one test would fail on a duplicate key rather than on the thing under
  * test. The counter resets per file, and setup.js empties the DB between tests.
  */

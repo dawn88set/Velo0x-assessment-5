@@ -67,14 +67,14 @@ export function WalletProvider({ children }) {
 
   // Held in state, not read ad hoc, so the listener effect below re-runs if the
   // provider only becomes available after mount. MetaMask usually injects
-  // window.ethereum before React mounts, but not always — and if we only looked
+  // window.ethereum before React mounts, but not always, and if we only looked
   // once at mount, a late injection would leave `accountsChanged` unsubscribed
   // for the lifetime of the page, silently ignoring every account switch.
   const [provider, setProvider] = useState(getMetaMaskProvider);
   const hasProvider = Boolean(provider);
 
   const disconnect = useCallback(() => {
-    // MetaMask exposes no programmatic disconnect — a dapp can only forget the
+    // MetaMask exposes no programmatic disconnect. A dapp can only forget the
     // account on its side. Revoking access is done from the extension itself.
     setAccount(null);
     setChainId(null);
@@ -133,7 +133,7 @@ export function WalletProvider({ children }) {
         setAccount(accounts[0]);
         setChainId(currentChain ?? null);
       } catch {
-        // Silent path — never surface an error the user did not ask for.
+        // Silent path. Never surface an error the user did not ask for.
       }
     })();
 

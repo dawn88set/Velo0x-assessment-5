@@ -6,7 +6,7 @@ const status = require('../constants/httpStatus');
 const { COMMON } = require('../constants/messages');
 
 // The original handlers used the Mongoose callback API (removed in Mongoose 7) and,
-// on the error path, called res.status(400).send(err) *without* an `else` — so the
+// on the error path, called res.status(400).send(err) *without* an `else`, so the
 // success response was sent too, throwing ERR_HTTP_HEADERS_SENT. Both are fixed by
 // moving to async/await with a single response per path.
 

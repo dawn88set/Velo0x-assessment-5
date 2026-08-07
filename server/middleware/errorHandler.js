@@ -14,7 +14,7 @@ const notFound = (req, res, next) => {
 };
 
 /**
- * Central Express error handler. Must keep the four-argument signature —
+ * Central Express error handler. Must keep the four-argument signature, because
  * Express uses arity to distinguish error middleware from ordinary middleware.
  */
 // eslint-disable-next-line no-unused-vars

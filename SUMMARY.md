@@ -29,7 +29,7 @@ So starting the server fetched whatever JavaScript was sitting at that URL and e
 in scope. Full filesystem and network access, as whoever ran `npm start`.
 
 I noticed it before running `npm install`, so nothing was ever fetched or executed here. Removing it was
-my first commit (`2387365`). I also deleted `providers/token.provider.js`, which was dead code that signed
+my first commit. I also deleted `providers/token.provider.js`, which was dead code that signed
 a throwaway JWT at import time, and moved the hardcoded signing key into `JWT_SECRET`.
 
 I genuinely don't know whether this was deliberate. If it's part of the exercise, then this is my answer
@@ -42,7 +42,7 @@ patched to kill the process, and nothing fired.
 
 ## Task 1: wallet connection
 
-The Connect button existed in three places — navbar desktop, navbar mobile, and the CTA on the homepage —
+The Connect button existed in three places (navbar desktop, navbar mobile, and the CTA on the homepage)
 and none of them had an `onClick`. Since the address has to show up in all three once you're connected,
 this is shared state, so it lives in a `WalletProvider` context with a single `ConnectWalletButton`
 consuming it.
@@ -75,7 +75,7 @@ regression test.
 ## Task 2: responsiveness
 
 This one wasn't a CSS problem. Tailwind was never installed. `postcss.config.js` referenced it, and CRA 5
-turns it on automatically whenever `tailwind.config.js` exists, but it wasn't in `package.json` at all —
+turns it on automatically whenever `tailwind.config.js` exists, but it wasn't in `package.json` at all,
 and the config used ESM `export default` in a file CRA loads with `require()`. So every `md:grid-cols-2`
 and `hidden md:flex` in the codebase was an inert string. The page wasn't responding to width because it
 had no stylesheet.

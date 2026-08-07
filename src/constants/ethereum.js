@@ -36,6 +36,6 @@ export const METAMASK_DOWNLOAD_URL = 'https://metamask.io/download/';
 export const WALLET_ERROR_MESSAGE = {
   NOT_INSTALLED: 'MetaMask is not installed.',
   REJECTED: 'Connection request rejected.',
-  PENDING: 'A connection request is already pending — open the MetaMask extension.',
+  PENDING: 'A connection request is already pending. Open the MetaMask extension.',
   FALLBACK: 'Could not connect to MetaMask.',
 };

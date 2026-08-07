@@ -10,7 +10,7 @@ let bucket = null;
  *
  * The original code used `new mongoose.mongo.GridFsStorage(...)` (routes/property.js)
  * and `gridfs-stream` (property.controller.js). `GridFsStorage` does not exist on the
- * mongo driver at all, and `gridfs-stream` targets driver 2.x — both throw under
+ * mongo driver at all, and `gridfs-stream` targets driver 2.x, so both throw under
  * Mongoose 8. `GridFSBucket` is the supported replacement.
  */
 function getBucket() {

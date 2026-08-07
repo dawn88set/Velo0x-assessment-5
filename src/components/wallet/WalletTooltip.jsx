@@ -7,8 +7,8 @@ import { FiAlertCircle, FiX } from 'react-icons/fi';
  * errors without pushing the surrounding layout around.
  *
  * Positioned absolutely, so the parent must be `relative`. `align` decides which
- * edge it hangs from — the navbar button sits hard against the right gutter, so
- * centring it there would push the panel off-screen on narrow viewports.
+ * edge it hangs from, because the navbar button sits hard against the right
+ * gutter and centring it there would push the panel off-screen on narrow viewports.
  */
 
 const ALIGNMENT = {
