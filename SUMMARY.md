@@ -7,8 +7,7 @@ npm test     # 91 backend, 21 frontend
 npm start    # client on :3000, API on :5001
 ```
 
-There's a detailed per-file breakdown in [CHANGELOG-ASSESSMENT.md](./CHANGELOG-ASSESSMENT.md) if you
-want it. This file is the short version.
+The commit history is one logical change per commit if you want the detail behind any of this.
 
 ## Please read this part first
 
